@@ -1,8 +1,3 @@
 .idea
-sarac/*.pyc
-sarac/core/front/*.pyc
-sarac/core/rep/*.pyc
-sarac/core/symbols/*.pyc
-sarac/core/visitors/*.pyc
-sarac/core/*.pyc
+*.pyc
 venv/
