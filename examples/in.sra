@@ -1,7 +1,8 @@
 int main(int y, int parameters) {
     int x;
+    string str;
     char c = 'a';
-    x = 1;
+    x = 1 + str;
     x = 3;
     return 0;
 }
@@ -20,5 +21,5 @@ int fib(int n) {
 
 int unreach() {
     if (1) return 1;
-    return 1 + foo();
+    return 1 + fib(2);
 }

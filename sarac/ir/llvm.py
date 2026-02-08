@@ -20,6 +20,8 @@ class LLVMGenerator:
         self.pending_params = []  # Parameters collected before a CALL
         self.alloca_instructions = []  # Alloca instructions to emit at function start
         self.i1_temporaries = set()  # Track which temporaries are i1 (from comparisons)
+        self.string_literals = {}  # Map string values to global constant names
+        self.string_counter = 0  # Counter for string literal names
     
     def type_to_llvm(self, sarac_type):
         """Convert Sarac type to LLVM type."""
@@ -30,6 +32,8 @@ class LLVMGenerator:
             return "i32"
         elif type_str == "char":
             return "i8"
+        elif type_str == "string":
+            return "i8*"
         elif type_str == "void":
             return "void"
         else:
@@ -48,6 +52,42 @@ class LLVMGenerator:
     def generate(self, mir_functions):
         """Generate LLVM IR for a list of MIR functions."""
         self.output = []
+        self.string_literals = {}
+        self.string_counter = 0
+        
+        # First pass: collect all string literals
+        for func in mir_functions:
+            for block in func.blocks:
+                for instr in block.instructions:
+                    if instr.op == Op.CONST and instr.operands:
+                        value = instr.operands[0]
+                        # Check if it's a string type
+                        is_string_type = False
+                        if instr.operand_types and len(instr.operand_types) > 0:
+                            type_str = str(instr.operand_types[0]).lower()
+                            is_string_type = (type_str == "string")
+                        
+                        # If it's a string type, or if it's a multi-character string that's not numeric
+                        if is_string_type or (isinstance(value, str) and len(value) > 1):
+                            # Check if it's not a numeric string
+                            try:
+                                int(value)
+                            except ValueError:
+                                # Not a number, it's a string literal
+                                if value not in self.string_literals:
+                                    global_name = f"@.str{self.string_counter}"
+                                    self.string_literals[value] = global_name
+                                    self.string_counter += 1
+        
+        # Emit string literal global constants
+        for string_value, global_name in self.string_literals.items():
+            # Escape the string for LLVM IR
+            escaped = string_value.replace('\\', '\\5C').replace('\n', '\\0A').replace('\t', '\\09').replace('\r', '\\0D').replace('"', '\\22').replace('\0', '\\00')
+            # Create null-terminated string
+            self.emit(f"{global_name} = private unnamed_addr constant [{len(string_value) + 1} x i8] c\"{escaped}\\00\"")
+        
+        if self.string_literals:
+            self.emit("")  # Blank line after string literals
         
         # Track which functions are defined
         defined_functions = {func.name for func in mir_functions}
@@ -210,14 +250,30 @@ class LLVMGenerator:
             # Constant: if it has a result, we need to create a temporary for it
             # This ensures instruction numbering is sequential
             value = operands[0]
-            llvm_value = self.get_llvm_value(value)
+            # Check if it's a string literal
+            is_string = value in self.string_literals
+            
+            # Also check type information if available
+            if hasattr(instr, 'operand_types') and instr.operand_types and len(instr.operand_types) > 0:
+                type_str = str(instr.operand_types[0]).lower()
+                if type_str == "string":
+                    is_string = True
+            
             if result:
-                # Create a temporary to hold the constant value
-                # This ensures proper instruction numbering
-                llvm_type = "i32"  # TODO: determine type from context
-                llvm_temp = self.new_llvm_temp()
-                self.emit(f"  {llvm_temp} = add {llvm_type} 0, {llvm_value}")
-                self.temp_to_llvm[result] = llvm_temp
+                if is_string:
+                    # It's a string literal
+                    global_name = self.string_literals[value]
+                    llvm_temp = self.new_llvm_temp()
+                    # Get pointer to string: getelementptr to get i8* from [N x i8]*
+                    self.emit(f"  {llvm_temp} = getelementptr inbounds [{len(value) + 1} x i8], [{len(value) + 1} x i8]* {global_name}, i32 0, i32 0")
+                    self.temp_to_llvm[result] = llvm_temp
+                else:
+                    # Number or character
+                    llvm_value = self.get_llvm_value(value)
+                    llvm_type = "i32"  # TODO: determine type from context (could be i8 for char)
+                    llvm_temp = self.new_llvm_temp()
+                    self.emit(f"  {llvm_temp} = add {llvm_type} 0, {llvm_value}")
+                    self.temp_to_llvm[result] = llvm_temp
         
         elif op == Op.LOAD:
             # Load variable: %t = load i32, i32* %var

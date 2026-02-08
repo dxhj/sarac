@@ -34,13 +34,27 @@ class FloatTypeDescriptor(TypeDescriptor):
         return "float"
 
 
+class StringTypeDescriptor(TypeDescriptor):
+    def __init__(self):
+        # Strings are pointers, so size is pointer size (typically 8 bytes on 64-bit)
+        super(StringTypeDescriptor, self).__init__(8)
+
+    def __repr__(self):
+        return "string"
+
+
 def is_numeric_type(ttype):
+    """Check if a type is numeric. Returns True only for int, float, and char.
+    String types are NOT numeric types."""
     if ttype == integerTypeDescriptor or ttype == floatTypeDescriptor or ttype == charTypeDescriptor:
         return True
     return False
 
 
 def generalize_type(type1, type2):
+    """Generalize two types for binary operations. Only works for numeric types.
+    Returns None if either type is not numeric (e.g., string types).
+    String types cannot be used in arithmetic operations."""
     if not is_numeric_type(type1) or not is_numeric_type(type2):
         return None
     if type1 == floatTypeDescriptor or type2 == floatTypeDescriptor:
@@ -53,3 +67,4 @@ def generalize_type(type1, type2):
 charTypeDescriptor = CharTypeDescriptor()
 integerTypeDescriptor = IntegerTypeDescriptor()
 floatTypeDescriptor = FloatTypeDescriptor()
+stringTypeDescriptor = StringTypeDescriptor()

@@ -215,6 +215,14 @@ class Parser(object):
         p[0] = Constant(char_value, charTypeDescriptor)
         p[0].coord = Coord(p[1][1], p[1][2])
 
+    def p_primary_expression_string(self, p):
+        """primary_expression : STRING_LITERAL"""
+        # p[1] is a tuple: (string_value, line, column)
+        # Create a Constant with stringTypeDescriptor
+        string_value = p[1][0]
+        p[0] = Constant(string_value, stringTypeDescriptor)
+        p[0].coord = Coord(p[1][1], p[1][2])
+
     def p_primary_expression_ref(self, p):
         """primary_expression : IDENTIFIER"""
         reference = Reference(p[1][0])
@@ -257,13 +265,16 @@ class Parser(object):
     def p_type_specifier(self, p):
         """type_specifier : CHAR
                           | INT
-                          | FLOAT"""
+                          | FLOAT
+                          | STRING"""
         if p[1][0] == "char":
             p[0] = charTypeDescriptor
         elif p[1][0] == "int":
             p[0] = integerTypeDescriptor
-        else:
+        elif p[1][0] == "float":
             p[0] = floatTypeDescriptor
+        else:
+            p[0] = stringTypeDescriptor
 
     def p_error(self, p):
         self.error_count += 1

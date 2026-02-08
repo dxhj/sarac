@@ -23,6 +23,7 @@ class Instruction:
         self.op = op  # Operation kind (ADD, SUB, LOAD, STORE, etc.)
         self.operands = list(operands)  # Operands (can be temps, constants, labels)
         self.result = None  # Result temporary (if any)
+        self.operand_types = None  # Optional: type information for operands (used for constants)
     
     def __repr__(self):
         if self.result:
@@ -450,6 +451,9 @@ class MIRGenerator:
             temp = self.current_function.new_temp()
             const_instr = Instruction(Op.CONST, node.value)
             const_instr.result = temp
+            # Store type information for the constant
+            if hasattr(node, 'type'):
+                const_instr.operand_types = [node.type]
             self.current_block.add_instruction(const_instr)
             return temp
         
