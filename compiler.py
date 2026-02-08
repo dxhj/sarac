@@ -1,14 +1,14 @@
-from sarac.core.rep.ast import *
+from sarac.frontend.ast import *
 
-from sarac.core.front.parser import Parser
-from sarac.core.visitors.symboltable import BuildSymbolTableVisitor, SymbolTablePrinterVisitor
-from sarac.core.visitors.optimizer import OptimizerVisitor
-from sarac.core.visitors.semantics import SemanticsVisitor
-from sarac.core.visitors.printer import PrintASTVisitor
+from sarac.frontend.parser import Parser
+from sarac.analysis.symboltable import BuildSymbolTableVisitor, SymbolTablePrinterVisitor
+from sarac.optimization.optimizer import OptimizerVisitor
+from sarac.analysis.semantic import SemanticsVisitor
+from sarac.frontend.printer import PrintASTVisitor
 
 t_count = 0
 
-with open('in.sra', 'r') as f:
+with open('examples/in.sra', 'r') as f:
     parser = Parser()
     program = parser.parse(f.read())
 
