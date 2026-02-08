@@ -18,6 +18,7 @@ int fib(int n) {
     }
 }
 
-int foo() {
+int unreach() {
+    if (1) return 1;
     return 1 + foo();
 }
