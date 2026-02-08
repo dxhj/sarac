@@ -129,6 +129,19 @@ class Parser(object):
         p[0] = Assignment(identifier, p[3])
         p[0].coord = identifier.coord
 
+    def p_return_statement(self, p):
+        """statement : RETURN SEMICOLON
+                     | RETURN expression SEMICOLON"""
+        if len(p) == 3:
+            # return;
+            p[0] = Return(None)
+        else:
+            # return expression;
+            p[0] = Return(p[2])
+        # Set coordinate from RETURN token (token value is tuple: (value, line, column))
+        if isinstance(p[1], tuple) and len(p[1]) >= 3:
+            p[0].coord = Coord(p[1][1], p[1][2])
+
     def p_compound_statement(self, p):
         """statement : compound_statement"""
         p[0] = p[1]

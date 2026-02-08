@@ -48,6 +48,9 @@ class PrintASTVisitor(object):
             print('* Visiting an assignment')
             node.accept_children(self)
             self.spaces -= 1
+        elif isinstance(node, Return):
+            print('* Visiting a return statement')
+            node.accept_children(self)
         elif isinstance(node, UnaryOperator):
             print(self.spaces * '\t', 'Visiting an unary operator', node.op)
             node.accept_children(self)
@@ -160,6 +163,13 @@ class PrettyPrintASTVisitor(object):
         elif isinstance(node, Assignment):
             self._print_node("Assignment", is_last=is_last)
             self._visit_children(node, is_last)
+        
+        elif isinstance(node, Return):
+            if node.expression is not None:
+                self._print_node("Return", is_last=is_last)
+                self._visit_children(node, is_last)
+            else:
+                self._print_node("Return", "no expression", is_last=is_last)
         
         elif isinstance(node, If):
             has_else = len(node.children) > 2 and node.children[2] is not None

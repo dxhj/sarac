@@ -167,3 +167,13 @@ class Identifier(Node):
         self.type = id_type
         self.value = value
         self.attributes = None
+
+
+class Return(Node):
+    def __init__(self, expression=None):
+        super(Return, self).__init__()
+        if expression is not None:
+            self.children = [expression]
+        else:
+            self.children = []
+        self.expression = expression
