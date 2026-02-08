@@ -111,7 +111,7 @@ class Parser(object):
 
     def p_while_loop(self, p):
         """statement : WHILE LPAREN expression RPAREN statement"""
-        p[0] = While(p[2], p[3])
+        p[0] = While(p[3], p[5])
 
     def p_for_loop(self, p):
         """statement : FOR LPAREN expression_statement expression_statement RPAREN statement
@@ -151,6 +151,8 @@ class Parser(object):
 
     def p_binary_expression(self, p):
         """expression : unary_expression
+                      | expression EQUAL expression
+                      | expression NOT_EQUAL expression
                       | expression LT expression
                       | expression LE expression
                       | expression GT expression
