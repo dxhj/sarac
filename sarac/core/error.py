@@ -8,13 +8,13 @@ def error(func):
                 raise SaraErrorException()
             except SaraErrorException as e:
                 if line is None:
-                    print func(cls, msg)
+                    print(func(cls, msg))
                 else:
-                    print func(cls, msg, line, column)
+                    print(func(cls, msg, line, column))
                 sys.exit(e)
         else:
             Error.errors += 1
-            print func(cls, msg, line, column)
+            print(func(cls, msg, line, column))
     return error_wrapper
 
 

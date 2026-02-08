@@ -44,7 +44,7 @@ class Lexer(object):
         'EQUAL',
         'NOT_EQUAL',
         'ASSIGN',
-    ] + keywords.values()
+    ] + list(keywords.values())
 
     t_ignore = ' \t'
 
@@ -71,7 +71,7 @@ class Lexer(object):
 
     def t_PLUS(self, t):
         r"""\+"""
-        print t
+        print(t)
         t.value = (t.value, t.lineno, self.token_column(t))
         return t
 
@@ -177,6 +177,6 @@ class Lexer(object):
     def t_error(self, t):
         Error.lexical_error("unknown char '%c'" % t.value[0], t.lexer.lineno, self.token_column(t))
         if len(t.value) > 1:
-            print "\t\t", u'\u2304'
-            print "\t>> \t", t.value[0:5].strip()
+            print("\t\t", u'\u2304')
+            print("\t>> \t", t.value[0:5].strip())
         t.lexer.skip(1)  # Skip one char ahead.

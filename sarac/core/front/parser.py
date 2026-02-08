@@ -1,7 +1,6 @@
 import ply.yacc as yacc
 
-from lexer import Lexer, Coord
-from sarac.core.front.lexer import Coord
+from sarac.core.front.lexer import Lexer, Coord
 from sarac.core.symbols.types import *
 from sarac.core.rep.ast import *
 from sarac.core.error import Error

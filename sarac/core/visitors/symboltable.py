@@ -64,11 +64,11 @@ class BuildSymbolTableVisitor(object):
 class SymbolTablePrinterVisitor(object):
     def visit(self, node):
         if isinstance(node, TranslationUnitList):
-            print "global symbol table"
-            print "\t", node.names
+            print("global symbol table")
+            print("\t", node.names)
 
         elif isinstance(node, CompoundStatement):
-            print "compound statement"
-            print "\t", node.names
+            print("compound statement")
+            print("\t", node.names)
 
         node.accept_children(self)
