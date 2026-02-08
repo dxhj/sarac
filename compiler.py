@@ -1,12 +1,14 @@
 from sarac.frontend.ast import *
+import os
+import sys
 
 from sarac.frontend.parser import Parser
 from sarac.analysis.symboltable import BuildSymbolTableVisitor, SymbolTablePrinterVisitor
 from sarac.optimization.optimizer import OptimizerVisitor
 from sarac.analysis.semantic import SemanticsVisitor
 from sarac.frontend.printer import PrintASTVisitor
+from sarac.ir.codegen import CodeGenerator
 
-t_count = 0
 
 with open('examples/in.sra', 'r') as f:
     parser = Parser()
@@ -47,3 +49,23 @@ with open('examples/in.sra', 'r') as f:
         print("Generated LLVM IR")
         print("=" * 60)
         print(llvm_ir)
+        
+        # Determine output name from input file
+        input_file = 'examples/in.sra'
+        output_name = os.path.splitext(os.path.basename(input_file))[0]
+        if not output_name:
+            output_name = "a.out"
+        
+        # Check if user wants to save .ll file (via command line argument)
+        save_llvm_ir = '--ll' in sys.argv
+        
+        codegen = CodeGenerator(save_llvm_ir=save_llvm_ir)
+        executable_path = codegen.compile(llvm_ir, output_name)
+        
+        if executable_path:
+            print(f"\n✓ Executable created: {executable_path}")
+        elif not save_llvm_ir:
+            print("\n✗ Could not create executable.")
+            print("Use --ll flag to save LLVM IR to a file.")
+        
+        codegen.cleanup()
