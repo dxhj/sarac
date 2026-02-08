@@ -273,23 +273,17 @@ class MIRGenerator:
     
     def visit_if(self, node):
         """Convert if statement to basic blocks with branches."""
-        # Create blocks: then, else (if exists), merge
+        # Create blocks: then, else (if exists)
         then_block = self.current_function.create_block()
         else_block = self.current_function.create_block() if node.children[2] else None
-        merge_block = self.current_function.create_block()
         
         # Evaluate condition in current block
         cond_temp = self.visit_expression(node.children[0])
         
-        # Add branch instruction (must be last in current block)
-        if else_block:
-            branch_instr = Instruction(Op.BRANCH, cond_temp, then_block.label, else_block.label)
-        else:
-            branch_instr = Instruction(Op.BRANCH, cond_temp, then_block.label, merge_block.label)
-        self.current_block.add_instruction(branch_instr)
+        # Store reference to block before branching
+        entry_block = self.current_block
         
         # Process then block
-        old_block = self.current_block
         self.current_block = then_block
         if node.children[1]:
             # Handle compound statements or single statements
@@ -297,17 +291,15 @@ class MIRGenerator:
                 self.visit_compound_statement(node.children[1])
             else:
                 self.visit_statement(node.children[1])
-        # Jump to merge block (if not already returning)
+        
+        # Check if then block ends with return
+        then_returns = False
         if self.current_block.instructions:
             last_instr = self.current_block.instructions[-1]
-            if last_instr.op not in (Op.RETURN, Op.RETVAL, Op.JUMP):
-                jump_instr = Instruction(Op.JUMP, merge_block.label)
-                self.current_block.add_instruction(jump_instr)
-        else:
-            jump_instr = Instruction(Op.JUMP, merge_block.label)
-            self.current_block.add_instruction(jump_instr)
+            then_returns = last_instr.op in (Op.RETURN, Op.RETVAL)
         
         # Process else block if it exists
+        else_returns = False
         if else_block:
             self.current_block = else_block
             if node.children[2]:
@@ -315,18 +307,50 @@ class MIRGenerator:
                     self.visit_compound_statement(node.children[2])
                 else:
                     self.visit_statement(node.children[2])
-            # Jump to merge block (if not already returning)
+            
+            # Check if else block ends with return
             if self.current_block.instructions:
                 last_instr = self.current_block.instructions[-1]
-                if last_instr.op not in (Op.RETURN, Op.RETVAL, Op.JUMP):
-                    jump_instr = Instruction(Op.JUMP, merge_block.label)
-                    self.current_block.add_instruction(jump_instr)
-            else:
+                else_returns = last_instr.op in (Op.RETURN, Op.RETVAL)
+        
+        # Only create merge block if at least one branch doesn't return
+        merge_block = None
+        if not then_returns or (else_block and not else_returns):
+            merge_block = self.current_function.create_block()
+            
+            # Add jumps to merge block from non-returning branches
+            if not then_returns:
+                self.current_block = then_block
+                jump_instr = Instruction(Op.JUMP, merge_block.label)
+                self.current_block.add_instruction(jump_instr)
+            
+            if else_block and not else_returns:
+                self.current_block = else_block
                 jump_instr = Instruction(Op.JUMP, merge_block.label)
                 self.current_block.add_instruction(jump_instr)
         
-        # Continue with merge block
-        self.current_block = merge_block
+        # Add branch instruction in entry block (must be last)
+        if else_block:
+            if merge_block:
+                # At least one branch doesn't return - normal branching
+                branch_instr = Instruction(Op.BRANCH, cond_temp, then_block.label, else_block.label)
+            else:
+                # Both branches return - branch doesn't matter, but we still need it
+                branch_instr = Instruction(Op.BRANCH, cond_temp, then_block.label, else_block.label)
+        else:
+            # No else block
+            if merge_block:
+                branch_instr = Instruction(Op.BRANCH, cond_temp, then_block.label, merge_block.label)
+            else:
+                # Then returns, no else - branch to then
+                branch_instr = Instruction(Op.BRANCH, cond_temp, then_block.label, then_block.label)
+        
+        entry_block.add_instruction(branch_instr)
+        
+        # Continue with merge block if it exists, otherwise execution ends
+        if merge_block:
+            self.current_block = merge_block
+        # If no merge block, execution ends (both branches returned)
     
     def visit_while(self, node):
         """Convert while loop to basic blocks."""
