@@ -121,28 +121,14 @@ class Lexer(object):
         t.value = (t.value, t.lineno, self.token_column(t))
         return t
 
-    def t_LT(self, t):
-        r"""<"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
-
+    # Order matters: longer patterns must come before shorter ones
     def t_LE(self, t):
         r"""<="""
         t.value = (t.value, t.lineno, self.token_column(t))
         return t
 
-    def t_GT(self, t):
-        r""">"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
-
     def t_GE(self, t):
         r""">="""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
-
-    def t_ASSIGN(self, t):
-        r"""="""
         t.value = (t.value, t.lineno, self.token_column(t))
         return t
 
@@ -153,6 +139,21 @@ class Lexer(object):
 
     def t_NOT_EQUAL(self, t):
         r"""!="""
+        t.value = (t.value, t.lineno, self.token_column(t))
+        return t
+
+    def t_LT(self, t):
+        r"""<"""
+        t.value = (t.value, t.lineno, self.token_column(t))
+        return t
+
+    def t_GT(self, t):
+        r""">"""
+        t.value = (t.value, t.lineno, self.token_column(t))
+        return t
+
+    def t_ASSIGN(self, t):
+        r"""="""
         t.value = (t.value, t.lineno, self.token_column(t))
         return t
 
