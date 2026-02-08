@@ -221,6 +221,33 @@ class Parser(object):
         reference.coord = Coord(p[1][1], p[1][2])
         p[0] = reference
 
+    def p_primary_expression_function_call(self, p):
+        """primary_expression : IDENTIFIER LPAREN argument_list RPAREN"""
+        identifier = Identifier(p[1][0])
+        identifier.coord = Coord(p[1][1], p[1][2])
+        function_call = FunctionCall(identifier, p[3])
+        function_call.coord = identifier.coord
+        p[0] = function_call
+
+    def p_argument_list(self, p):
+        """argument_list : expression_list
+                        |"""
+        if len(p) == 2:
+            p[0] = p[1]
+        else:
+            p[0] = ArgumentList([])
+
+    def p_expression_list(self, p):
+        """expression_list : expression_list COMMA expression
+                          | expression"""
+        if len(p) == 4:
+            # expression_list COMMA expression
+            p[0] = p[1]
+            p[0].children.append(p[3])
+        else:
+            # expression
+            p[0] = ArgumentList([p[1]])
+
     def p_unary_operator(self, p):
         """unary_operator : NOT
                           | MINUS

@@ -6,6 +6,10 @@ int main(int y, int parameters) {
     return 0;
 }
 
-int fat() {
+char bar() {
     return 'a';
+}
+
+int foo() {
+    return 1 + bar();
 }

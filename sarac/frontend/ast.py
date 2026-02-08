@@ -181,3 +181,28 @@ class Return(Node):
         else:
             self.children = []
         self.expression = expression
+
+
+class FunctionCall(Expression):
+    def __init__(self, name, arguments):
+        super(FunctionCall, self).__init__()
+        # name can be either an Identifier or a string
+        if isinstance(name, Identifier):
+            self.name = name.name
+            self.identifier = name
+        else:
+            self.name = name
+            self.identifier = Identifier(name)
+        self.arguments = arguments
+        if arguments:
+            self.children = [self.identifier] + arguments.children
+        else:
+            self.children = [self.identifier]
+        self.type = None  # Will be set during semantic analysis
+        self.attributes = None  # Will be set during semantic analysis
+
+
+class ArgumentList(Node):
+    def __init__(self, arguments):
+        super(ArgumentList, self).__init__()
+        self.children = arguments

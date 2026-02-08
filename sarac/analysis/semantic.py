@@ -1,4 +1,4 @@
-from sarac.frontend.ast import Reference, BinaryOperator, UnaryOperator, Assignment, FunctionDefinition, Return
+from sarac.frontend.ast import Reference, BinaryOperator, UnaryOperator, Assignment, FunctionDefinition, Return, FunctionCall
 from sarac.analysis.attributes import VariableAttributes
 from sarac.analysis.types import generalize_type
 from sarac.utils.error import Error
@@ -74,6 +74,28 @@ class SemanticsVisitor(object):
             if node.type is None:
                 Error.type_error("invalid types", node.coord.line, node.coord.column)
 
+            return
+
+        if isinstance(node, FunctionCall):
+            # Visit arguments first to get their types
+            if node.arguments:
+                node.arguments.accept_children(self)
+            
+            # Look up the function in symbol table
+            if node.identifier.attributes is None:
+                Error.type_error("function \"%s\" is not defined" % node.name,
+                               node.coord.line if node.coord else 0,
+                               node.coord.column if node.coord else 0)
+            else:
+                # Set the return type of the function call
+                from sarac.analysis.attributes import FunctionAttributes
+                if isinstance(node.identifier.attributes, FunctionAttributes):
+                    node.type = node.identifier.attributes.type
+                    node.attributes = node.identifier.attributes
+                else:
+                    Error.type_error("\"%s\" is not a function" % node.name,
+                                   node.coord.line if node.coord else 0,
+                                   node.coord.column if node.coord else 0)
             return
 
         if isinstance(node, Assignment):

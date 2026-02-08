@@ -63,6 +63,9 @@ class PrintASTVisitor(object):
             print(self.spaces * '\t', "Visiting a reference: ", node.name)
         elif isinstance(node, Constant):
             print(self.spaces * '\t', "Visiting a constant: ", node.value)
+        elif isinstance(node, FunctionCall):
+            print(self.spaces * '\t', "Visiting a function call: ", node.name)
+            node.accept_children(self)
 
 
 class PrettyPrintASTVisitor(object):
@@ -202,6 +205,15 @@ class PrettyPrintASTVisitor(object):
         elif isinstance(node, Constant):
             const_type = str(node.type) if hasattr(node, 'type') and node.type else "?"
             self._print_node("Constant", f"value={node.value}, type={const_type}", is_last=is_last)
+        
+        elif isinstance(node, FunctionCall):
+            args_count = len(node.arguments.children) if node.arguments else 0
+            self._print_node("FunctionCall", f"name='{node.name}', args={args_count}", is_last=is_last)
+            self._visit_children(node, is_last)
+        
+        elif isinstance(node, ArgumentList):
+            self._print_node("ArgumentList", is_last=is_last)
+            self._visit_children(node, is_last)
         
         else:
             # Fallback for unknown node types

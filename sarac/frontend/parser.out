@@ -54,44 +54,49 @@ Rule 42    primary_expression -> LPAREN expression RPAREN
 Rule 43    primary_expression -> NUMBER
 Rule 44    primary_expression -> CHARACTER_LITERAL
 Rule 45    primary_expression -> IDENTIFIER
-Rule 46    unary_operator -> NOT
-Rule 47    unary_operator -> MINUS
-Rule 48    unary_operator -> PLUS
-Rule 49    type_specifier -> CHAR
-Rule 50    type_specifier -> INT
-Rule 51    type_specifier -> FLOAT
+Rule 46    primary_expression -> IDENTIFIER LPAREN argument_list RPAREN
+Rule 47    argument_list -> expression_list
+Rule 48    argument_list -> <empty>
+Rule 49    expression_list -> expression_list COMMA expression
+Rule 50    expression_list -> expression
+Rule 51    unary_operator -> NOT
+Rule 52    unary_operator -> MINUS
+Rule 53    unary_operator -> PLUS
+Rule 54    type_specifier -> CHAR
+Rule 55    type_specifier -> INT
+Rule 56    type_specifier -> FLOAT
 
 Terminals, with rules where they appear
 
 ASSIGN               : 13 21
-CHAR                 : 49
+CHAR                 : 54
 CHARACTER_LITERAL    : 44
-COMMA                : 8
+COMMA                : 8 49
 DIV                  : 39
 DO                   : 
 ELSE                 : 17
 EQUAL                : 30
-FLOAT                : 51
+FLOAT                : 56
 FOR                  : 19 20
 GE                   : 35
 GT                   : 34
-IDENTIFIER           : 5 8 9 12 13 21 45
+IDENTIFIER           : 5 8 9 12 13 21 45 46
 IF                   : 16 17
-INT                  : 50
+INT                  : 55
 LBRACE               : 26
 LBRACKET             : 
 LE                   : 33
-LPAREN               : 5 16 17 18 19 20 42
+LPAREN               : 5 16 17 18 19 20 42 46
 LT                   : 32
-MINUS                : 37 47
-NOT                  : 46
+MINUS                : 37 52
+NOT                  : 51
 NOT_EQUAL            : 31
 NUMBER               : 43
-PLUS                 : 36 48
+PLUS                 : 36 53
 RBRACE               : 26
 RBRACKET             : 
 RETURN               : 22 23
-RPAREN               : 5 16 17 18 19 20 42
+RPAREN               : 5 16 17 18 19 20 42 46
 SEMICOLON            : 12 13 21 22 23 27 28
 TIMES                : 38
 WHILE                : 18
@@ -99,10 +104,12 @@ error                :
 
 Nonterminals, with rules where they appear
 
+argument_list        : 46
 compound_statement   : 5 24
 declaration          : 4 10
 declarations         : 10 26
-expression           : 13 16 17 18 20 21 23 28 30 30 31 31 32 32 33 33 34 34 35 35 36 36 37 37 38 38 39 39 42
+expression           : 13 16 17 18 20 21 23 28 30 30 31 31 32 32 33 33 34 34 35 35 36 36 37 37 38 38 39 39 42 49 50
+expression_list      : 47 49
 expression_statement : 19 19 20 20 25
 external_declaration : 1 2
 function_definition  : 3
@@ -128,9 +135,9 @@ state 0
     (5) function_definition -> . type_specifier IDENTIFIER LPAREN parameters RPAREN compound_statement
     (12) declaration -> . type_specifier IDENTIFIER SEMICOLON
     (13) declaration -> . type_specifier IDENTIFIER ASSIGN expression SEMICOLON
-    (49) type_specifier -> . CHAR
-    (50) type_specifier -> . INT
-    (51) type_specifier -> . FLOAT
+    (54) type_specifier -> . CHAR
+    (55) type_specifier -> . INT
+    (56) type_specifier -> . FLOAT
 
     CHAR            shift and go to state 6
     INT             shift and go to state 7
@@ -151,9 +158,9 @@ state 1
     (5) function_definition -> . type_specifier IDENTIFIER LPAREN parameters RPAREN compound_statement
     (12) declaration -> . type_specifier IDENTIFIER SEMICOLON
     (13) declaration -> . type_specifier IDENTIFIER ASSIGN expression SEMICOLON
-    (49) type_specifier -> . CHAR
-    (50) type_specifier -> . INT
-    (51) type_specifier -> . FLOAT
+    (54) type_specifier -> . CHAR
+    (55) type_specifier -> . INT
+    (56) type_specifier -> . FLOAT
 
     CHAR            shift and go to state 6
     INT             shift and go to state 7
@@ -205,23 +212,23 @@ state 5
 
 state 6
 
-    (49) type_specifier -> CHAR .
+    (54) type_specifier -> CHAR .
 
-    IDENTIFIER      reduce using rule 49 (type_specifier -> CHAR .)
+    IDENTIFIER      reduce using rule 54 (type_specifier -> CHAR .)
 
 
 state 7
 
-    (50) type_specifier -> INT .
+    (55) type_specifier -> INT .
 
-    IDENTIFIER      reduce using rule 50 (type_specifier -> INT .)
+    IDENTIFIER      reduce using rule 55 (type_specifier -> INT .)
 
 
 state 8
 
-    (51) type_specifier -> FLOAT .
+    (56) type_specifier -> FLOAT .
 
-    IDENTIFIER      reduce using rule 51 (type_specifier -> FLOAT .)
+    IDENTIFIER      reduce using rule 56 (type_specifier -> FLOAT .)
 
 
 state 9
@@ -252,9 +259,9 @@ state 11
     (7) parameters -> .
     (8) parameter_list -> . parameter_list COMMA type_specifier IDENTIFIER
     (9) parameter_list -> . type_specifier IDENTIFIER
-    (49) type_specifier -> . CHAR
-    (50) type_specifier -> . INT
-    (51) type_specifier -> . FLOAT
+    (54) type_specifier -> . CHAR
+    (55) type_specifier -> . INT
+    (56) type_specifier -> . FLOAT
 
     RPAREN          reduce using rule 7 (parameters -> .)
     CHAR            shift and go to state 6
@@ -309,9 +316,10 @@ state 13
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -352,6 +360,7 @@ state 16
 state 17
 
     (45) primary_expression -> IDENTIFIER .
+    (46) primary_expression -> IDENTIFIER . LPAREN argument_list RPAREN
 
     SEMICOLON       reduce using rule 45 (primary_expression -> IDENTIFIER .)
     EQUAL           reduce using rule 45 (primary_expression -> IDENTIFIER .)
@@ -365,6 +374,8 @@ state 17
     TIMES           reduce using rule 45 (primary_expression -> IDENTIFIER .)
     DIV             reduce using rule 45 (primary_expression -> IDENTIFIER .)
     RPAREN          reduce using rule 45 (primary_expression -> IDENTIFIER .)
+    COMMA           reduce using rule 45 (primary_expression -> IDENTIFIER .)
+    LPAREN          shift and go to state 31
 
 
 state 18
@@ -381,17 +392,17 @@ state 18
     (38) expression -> expression . TIMES expression
     (39) expression -> expression . DIV expression
 
-    SEMICOLON       shift and go to state 31
-    EQUAL           shift and go to state 32
-    NOT_EQUAL       shift and go to state 33
-    LT              shift and go to state 34
-    LE              shift and go to state 35
-    GT              shift and go to state 36
-    GE              shift and go to state 37
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    SEMICOLON       shift and go to state 32
+    EQUAL           shift and go to state 33
+    NOT_EQUAL       shift and go to state 34
+    LT              shift and go to state 35
+    LE              shift and go to state 36
+    GT              shift and go to state 37
+    GE              shift and go to state 38
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
 
 state 19
@@ -410,32 +421,33 @@ state 19
     TIMES           reduce using rule 29 (expression -> unary_expression .)
     DIV             reduce using rule 29 (expression -> unary_expression .)
     RPAREN          reduce using rule 29 (expression -> unary_expression .)
+    COMMA           reduce using rule 29 (expression -> unary_expression .)
 
 
 state 20
 
-    (48) unary_operator -> PLUS .
+    (53) unary_operator -> PLUS .
 
-    LPAREN          reduce using rule 48 (unary_operator -> PLUS .)
-    NUMBER          reduce using rule 48 (unary_operator -> PLUS .)
-    CHARACTER_LITERAL reduce using rule 48 (unary_operator -> PLUS .)
-    IDENTIFIER      reduce using rule 48 (unary_operator -> PLUS .)
-    NOT             reduce using rule 48 (unary_operator -> PLUS .)
-    MINUS           reduce using rule 48 (unary_operator -> PLUS .)
-    PLUS            reduce using rule 48 (unary_operator -> PLUS .)
+    LPAREN          reduce using rule 53 (unary_operator -> PLUS .)
+    NUMBER          reduce using rule 53 (unary_operator -> PLUS .)
+    CHARACTER_LITERAL reduce using rule 53 (unary_operator -> PLUS .)
+    IDENTIFIER      reduce using rule 53 (unary_operator -> PLUS .)
+    NOT             reduce using rule 53 (unary_operator -> PLUS .)
+    MINUS           reduce using rule 53 (unary_operator -> PLUS .)
+    PLUS            reduce using rule 53 (unary_operator -> PLUS .)
 
 
 state 21
 
-    (47) unary_operator -> MINUS .
+    (52) unary_operator -> MINUS .
 
-    LPAREN          reduce using rule 47 (unary_operator -> MINUS .)
-    NUMBER          reduce using rule 47 (unary_operator -> MINUS .)
-    CHARACTER_LITERAL reduce using rule 47 (unary_operator -> MINUS .)
-    IDENTIFIER      reduce using rule 47 (unary_operator -> MINUS .)
-    NOT             reduce using rule 47 (unary_operator -> MINUS .)
-    MINUS           reduce using rule 47 (unary_operator -> MINUS .)
-    PLUS            reduce using rule 47 (unary_operator -> MINUS .)
+    LPAREN          reduce using rule 52 (unary_operator -> MINUS .)
+    NUMBER          reduce using rule 52 (unary_operator -> MINUS .)
+    CHARACTER_LITERAL reduce using rule 52 (unary_operator -> MINUS .)
+    IDENTIFIER      reduce using rule 52 (unary_operator -> MINUS .)
+    NOT             reduce using rule 52 (unary_operator -> MINUS .)
+    MINUS           reduce using rule 52 (unary_operator -> MINUS .)
+    PLUS            reduce using rule 52 (unary_operator -> MINUS .)
 
 
 state 22
@@ -454,6 +466,7 @@ state 22
     TIMES           reduce using rule 40 (unary_expression -> primary_expression .)
     DIV             reduce using rule 40 (unary_expression -> primary_expression .)
     RPAREN          reduce using rule 40 (unary_expression -> primary_expression .)
+    COMMA           reduce using rule 40 (unary_expression -> primary_expression .)
 
 
 state 23
@@ -465,9 +478,10 @@ state 23
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -478,7 +492,7 @@ state 23
     PLUS            shift and go to state 20
 
     unary_operator                 shift and go to state 23
-    unary_expression               shift and go to state 42
+    unary_expression               shift and go to state 43
     primary_expression             shift and go to state 22
 
 state 24
@@ -501,9 +515,10 @@ state 24
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -513,7 +528,7 @@ state 24
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 43
+    expression                     shift and go to state 44
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
@@ -534,6 +549,7 @@ state 25
     TIMES           reduce using rule 43 (primary_expression -> NUMBER .)
     DIV             reduce using rule 43 (primary_expression -> NUMBER .)
     RPAREN          reduce using rule 43 (primary_expression -> NUMBER .)
+    COMMA           reduce using rule 43 (primary_expression -> NUMBER .)
 
 
 state 26
@@ -552,19 +568,20 @@ state 26
     TIMES           reduce using rule 44 (primary_expression -> CHARACTER_LITERAL .)
     DIV             reduce using rule 44 (primary_expression -> CHARACTER_LITERAL .)
     RPAREN          reduce using rule 44 (primary_expression -> CHARACTER_LITERAL .)
+    COMMA           reduce using rule 44 (primary_expression -> CHARACTER_LITERAL .)
 
 
 state 27
 
-    (46) unary_operator -> NOT .
+    (51) unary_operator -> NOT .
 
-    LPAREN          reduce using rule 46 (unary_operator -> NOT .)
-    NUMBER          reduce using rule 46 (unary_operator -> NOT .)
-    CHARACTER_LITERAL reduce using rule 46 (unary_operator -> NOT .)
-    IDENTIFIER      reduce using rule 46 (unary_operator -> NOT .)
-    NOT             reduce using rule 46 (unary_operator -> NOT .)
-    MINUS           reduce using rule 46 (unary_operator -> NOT .)
-    PLUS            reduce using rule 46 (unary_operator -> NOT .)
+    LPAREN          reduce using rule 51 (unary_operator -> NOT .)
+    NUMBER          reduce using rule 51 (unary_operator -> NOT .)
+    CHARACTER_LITERAL reduce using rule 51 (unary_operator -> NOT .)
+    IDENTIFIER      reduce using rule 51 (unary_operator -> NOT .)
+    NOT             reduce using rule 51 (unary_operator -> NOT .)
+    MINUS           reduce using rule 51 (unary_operator -> NOT .)
+    PLUS            reduce using rule 51 (unary_operator -> NOT .)
 
 
 state 28
@@ -580,24 +597,69 @@ state 29
     (5) function_definition -> type_specifier IDENTIFIER LPAREN parameters RPAREN . compound_statement
     (26) compound_statement -> . LBRACE declarations statements RBRACE
 
-    LBRACE          shift and go to state 45
+    LBRACE          shift and go to state 46
 
-    compound_statement             shift and go to state 44
+    compound_statement             shift and go to state 45
 
 state 30
 
     (8) parameter_list -> parameter_list COMMA . type_specifier IDENTIFIER
-    (49) type_specifier -> . CHAR
-    (50) type_specifier -> . INT
-    (51) type_specifier -> . FLOAT
+    (54) type_specifier -> . CHAR
+    (55) type_specifier -> . INT
+    (56) type_specifier -> . FLOAT
 
     CHAR            shift and go to state 6
     INT             shift and go to state 7
     FLOAT           shift and go to state 8
 
-    type_specifier                 shift and go to state 46
+    type_specifier                 shift and go to state 47
 
 state 31
+
+    (46) primary_expression -> IDENTIFIER LPAREN . argument_list RPAREN
+    (47) argument_list -> . expression_list
+    (48) argument_list -> .
+    (49) expression_list -> . expression_list COMMA expression
+    (50) expression_list -> . expression
+    (29) expression -> . unary_expression
+    (30) expression -> . expression EQUAL expression
+    (31) expression -> . expression NOT_EQUAL expression
+    (32) expression -> . expression LT expression
+    (33) expression -> . expression LE expression
+    (34) expression -> . expression GT expression
+    (35) expression -> . expression GE expression
+    (36) expression -> . expression PLUS expression
+    (37) expression -> . expression MINUS expression
+    (38) expression -> . expression TIMES expression
+    (39) expression -> . expression DIV expression
+    (40) unary_expression -> . primary_expression
+    (41) unary_expression -> . unary_operator unary_expression
+    (42) primary_expression -> . LPAREN expression RPAREN
+    (43) primary_expression -> . NUMBER
+    (44) primary_expression -> . CHARACTER_LITERAL
+    (45) primary_expression -> . IDENTIFIER
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
+
+    RPAREN          reduce using rule 48 (argument_list -> .)
+    LPAREN          shift and go to state 24
+    NUMBER          shift and go to state 25
+    CHARACTER_LITERAL shift and go to state 26
+    IDENTIFIER      shift and go to state 17
+    NOT             shift and go to state 27
+    MINUS           shift and go to state 21
+    PLUS            shift and go to state 20
+
+    argument_list                  shift and go to state 48
+    expression_list                shift and go to state 49
+    expression                     shift and go to state 50
+    unary_expression               shift and go to state 19
+    primary_expression             shift and go to state 22
+    unary_operator                 shift and go to state 23
+
+state 32
 
     (13) declaration -> type_specifier IDENTIFIER ASSIGN expression SEMICOLON .
 
@@ -621,7 +683,7 @@ state 31
     PLUS            reduce using rule 13 (declaration -> type_specifier IDENTIFIER ASSIGN expression SEMICOLON .)
 
 
-state 32
+state 33
 
     (30) expression -> expression EQUAL . expression
     (29) expression -> . unary_expression
@@ -641,9 +703,10 @@ state 32
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -653,12 +716,12 @@ state 32
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 47
+    expression                     shift and go to state 51
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 33
+state 34
 
     (31) expression -> expression NOT_EQUAL . expression
     (29) expression -> . unary_expression
@@ -678,9 +741,10 @@ state 33
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -690,12 +754,12 @@ state 33
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 48
+    expression                     shift and go to state 52
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 34
+state 35
 
     (32) expression -> expression LT . expression
     (29) expression -> . unary_expression
@@ -715,9 +779,10 @@ state 34
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -727,12 +792,12 @@ state 34
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 49
+    expression                     shift and go to state 53
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 35
+state 36
 
     (33) expression -> expression LE . expression
     (29) expression -> . unary_expression
@@ -752,9 +817,10 @@ state 35
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -764,12 +830,12 @@ state 35
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 50
+    expression                     shift and go to state 54
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 36
+state 37
 
     (34) expression -> expression GT . expression
     (29) expression -> . unary_expression
@@ -789,9 +855,10 @@ state 36
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -801,12 +868,12 @@ state 36
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 51
+    expression                     shift and go to state 55
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 37
+state 38
 
     (35) expression -> expression GE . expression
     (29) expression -> . unary_expression
@@ -826,9 +893,10 @@ state 37
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -838,12 +906,12 @@ state 37
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 52
+    expression                     shift and go to state 56
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 38
+state 39
 
     (36) expression -> expression PLUS . expression
     (29) expression -> . unary_expression
@@ -863,9 +931,10 @@ state 38
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -875,12 +944,12 @@ state 38
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 53
+    expression                     shift and go to state 57
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 39
+state 40
 
     (37) expression -> expression MINUS . expression
     (29) expression -> . unary_expression
@@ -900,9 +969,10 @@ state 39
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -912,12 +982,12 @@ state 39
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 54
+    expression                     shift and go to state 58
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 40
+state 41
 
     (38) expression -> expression TIMES . expression
     (29) expression -> . unary_expression
@@ -937,9 +1007,10 @@ state 40
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -949,12 +1020,12 @@ state 40
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 55
+    expression                     shift and go to state 59
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 41
+state 42
 
     (39) expression -> expression DIV . expression
     (29) expression -> . unary_expression
@@ -974,9 +1045,10 @@ state 41
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -986,12 +1058,12 @@ state 41
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 56
+    expression                     shift and go to state 60
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 42
+state 43
 
     (41) unary_expression -> unary_operator unary_expression .
 
@@ -1007,9 +1079,10 @@ state 42
     TIMES           reduce using rule 41 (unary_expression -> unary_operator unary_expression .)
     DIV             reduce using rule 41 (unary_expression -> unary_operator unary_expression .)
     RPAREN          reduce using rule 41 (unary_expression -> unary_operator unary_expression .)
+    COMMA           reduce using rule 41 (unary_expression -> unary_operator unary_expression .)
 
 
-state 43
+state 44
 
     (42) primary_expression -> LPAREN expression . RPAREN
     (30) expression -> expression . EQUAL expression
@@ -1023,20 +1096,20 @@ state 43
     (38) expression -> expression . TIMES expression
     (39) expression -> expression . DIV expression
 
-    RPAREN          shift and go to state 57
-    EQUAL           shift and go to state 32
-    NOT_EQUAL       shift and go to state 33
-    LT              shift and go to state 34
-    LE              shift and go to state 35
-    GT              shift and go to state 36
-    GE              shift and go to state 37
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    RPAREN          shift and go to state 61
+    EQUAL           shift and go to state 33
+    NOT_EQUAL       shift and go to state 34
+    LT              shift and go to state 35
+    LE              shift and go to state 36
+    GT              shift and go to state 37
+    GE              shift and go to state 38
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
 
-state 44
+state 45
 
     (5) function_definition -> type_specifier IDENTIFIER LPAREN parameters RPAREN compound_statement .
 
@@ -1046,7 +1119,7 @@ state 44
     $end            reduce using rule 5 (function_definition -> type_specifier IDENTIFIER LPAREN parameters RPAREN compound_statement .)
 
 
-state 45
+state 46
 
     (26) compound_statement -> LBRACE . declarations statements RBRACE
     (10) declarations -> . declarations declaration
@@ -1070,16 +1143,60 @@ state 45
     MINUS           reduce using rule 11 (declarations -> .)
     PLUS            reduce using rule 11 (declarations -> .)
 
-    declarations                   shift and go to state 58
+    declarations                   shift and go to state 62
 
-state 46
+state 47
 
     (8) parameter_list -> parameter_list COMMA type_specifier . IDENTIFIER
 
-    IDENTIFIER      shift and go to state 59
+    IDENTIFIER      shift and go to state 63
 
 
-state 47
+state 48
+
+    (46) primary_expression -> IDENTIFIER LPAREN argument_list . RPAREN
+
+    RPAREN          shift and go to state 64
+
+
+state 49
+
+    (47) argument_list -> expression_list .
+    (49) expression_list -> expression_list . COMMA expression
+
+    RPAREN          reduce using rule 47 (argument_list -> expression_list .)
+    COMMA           shift and go to state 65
+
+
+state 50
+
+    (50) expression_list -> expression .
+    (30) expression -> expression . EQUAL expression
+    (31) expression -> expression . NOT_EQUAL expression
+    (32) expression -> expression . LT expression
+    (33) expression -> expression . LE expression
+    (34) expression -> expression . GT expression
+    (35) expression -> expression . GE expression
+    (36) expression -> expression . PLUS expression
+    (37) expression -> expression . MINUS expression
+    (38) expression -> expression . TIMES expression
+    (39) expression -> expression . DIV expression
+
+    COMMA           reduce using rule 50 (expression_list -> expression .)
+    RPAREN          reduce using rule 50 (expression_list -> expression .)
+    EQUAL           shift and go to state 33
+    NOT_EQUAL       shift and go to state 34
+    LT              shift and go to state 35
+    LE              shift and go to state 36
+    GT              shift and go to state 37
+    GE              shift and go to state 38
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
+
+
+state 51
 
     (30) expression -> expression EQUAL expression .
     (30) expression -> expression . EQUAL expression
@@ -1097,14 +1214,15 @@ state 47
     EQUAL           reduce using rule 30 (expression -> expression EQUAL expression .)
     NOT_EQUAL       reduce using rule 30 (expression -> expression EQUAL expression .)
     RPAREN          reduce using rule 30 (expression -> expression EQUAL expression .)
-    LT              shift and go to state 34
-    LE              shift and go to state 35
-    GT              shift and go to state 36
-    GE              shift and go to state 37
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    COMMA           reduce using rule 30 (expression -> expression EQUAL expression .)
+    LT              shift and go to state 35
+    LE              shift and go to state 36
+    GT              shift and go to state 37
+    GE              shift and go to state 38
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
   ! LT              [ reduce using rule 30 (expression -> expression EQUAL expression .) ]
   ! LE              [ reduce using rule 30 (expression -> expression EQUAL expression .) ]
@@ -1114,11 +1232,11 @@ state 47
   ! MINUS           [ reduce using rule 30 (expression -> expression EQUAL expression .) ]
   ! TIMES           [ reduce using rule 30 (expression -> expression EQUAL expression .) ]
   ! DIV             [ reduce using rule 30 (expression -> expression EQUAL expression .) ]
-  ! EQUAL           [ shift and go to state 32 ]
-  ! NOT_EQUAL       [ shift and go to state 33 ]
+  ! EQUAL           [ shift and go to state 33 ]
+  ! NOT_EQUAL       [ shift and go to state 34 ]
 
 
-state 48
+state 52
 
     (31) expression -> expression NOT_EQUAL expression .
     (30) expression -> expression . EQUAL expression
@@ -1136,14 +1254,15 @@ state 48
     EQUAL           reduce using rule 31 (expression -> expression NOT_EQUAL expression .)
     NOT_EQUAL       reduce using rule 31 (expression -> expression NOT_EQUAL expression .)
     RPAREN          reduce using rule 31 (expression -> expression NOT_EQUAL expression .)
-    LT              shift and go to state 34
-    LE              shift and go to state 35
-    GT              shift and go to state 36
-    GE              shift and go to state 37
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    COMMA           reduce using rule 31 (expression -> expression NOT_EQUAL expression .)
+    LT              shift and go to state 35
+    LE              shift and go to state 36
+    GT              shift and go to state 37
+    GE              shift and go to state 38
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
   ! LT              [ reduce using rule 31 (expression -> expression NOT_EQUAL expression .) ]
   ! LE              [ reduce using rule 31 (expression -> expression NOT_EQUAL expression .) ]
@@ -1153,11 +1272,11 @@ state 48
   ! MINUS           [ reduce using rule 31 (expression -> expression NOT_EQUAL expression .) ]
   ! TIMES           [ reduce using rule 31 (expression -> expression NOT_EQUAL expression .) ]
   ! DIV             [ reduce using rule 31 (expression -> expression NOT_EQUAL expression .) ]
-  ! EQUAL           [ shift and go to state 32 ]
-  ! NOT_EQUAL       [ shift and go to state 33 ]
+  ! EQUAL           [ shift and go to state 33 ]
+  ! NOT_EQUAL       [ shift and go to state 34 ]
 
 
-state 49
+state 53
 
     (32) expression -> expression LT expression .
     (30) expression -> expression . EQUAL expression
@@ -1179,24 +1298,25 @@ state 49
     GT              reduce using rule 32 (expression -> expression LT expression .)
     GE              reduce using rule 32 (expression -> expression LT expression .)
     RPAREN          reduce using rule 32 (expression -> expression LT expression .)
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    COMMA           reduce using rule 32 (expression -> expression LT expression .)
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
   ! PLUS            [ reduce using rule 32 (expression -> expression LT expression .) ]
   ! MINUS           [ reduce using rule 32 (expression -> expression LT expression .) ]
   ! TIMES           [ reduce using rule 32 (expression -> expression LT expression .) ]
   ! DIV             [ reduce using rule 32 (expression -> expression LT expression .) ]
-  ! EQUAL           [ shift and go to state 32 ]
-  ! NOT_EQUAL       [ shift and go to state 33 ]
-  ! LT              [ shift and go to state 34 ]
-  ! LE              [ shift and go to state 35 ]
-  ! GT              [ shift and go to state 36 ]
-  ! GE              [ shift and go to state 37 ]
+  ! EQUAL           [ shift and go to state 33 ]
+  ! NOT_EQUAL       [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 35 ]
+  ! LE              [ shift and go to state 36 ]
+  ! GT              [ shift and go to state 37 ]
+  ! GE              [ shift and go to state 38 ]
 
 
-state 50
+state 54
 
     (33) expression -> expression LE expression .
     (30) expression -> expression . EQUAL expression
@@ -1218,24 +1338,25 @@ state 50
     GT              reduce using rule 33 (expression -> expression LE expression .)
     GE              reduce using rule 33 (expression -> expression LE expression .)
     RPAREN          reduce using rule 33 (expression -> expression LE expression .)
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    COMMA           reduce using rule 33 (expression -> expression LE expression .)
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
   ! PLUS            [ reduce using rule 33 (expression -> expression LE expression .) ]
   ! MINUS           [ reduce using rule 33 (expression -> expression LE expression .) ]
   ! TIMES           [ reduce using rule 33 (expression -> expression LE expression .) ]
   ! DIV             [ reduce using rule 33 (expression -> expression LE expression .) ]
-  ! EQUAL           [ shift and go to state 32 ]
-  ! NOT_EQUAL       [ shift and go to state 33 ]
-  ! LT              [ shift and go to state 34 ]
-  ! LE              [ shift and go to state 35 ]
-  ! GT              [ shift and go to state 36 ]
-  ! GE              [ shift and go to state 37 ]
+  ! EQUAL           [ shift and go to state 33 ]
+  ! NOT_EQUAL       [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 35 ]
+  ! LE              [ shift and go to state 36 ]
+  ! GT              [ shift and go to state 37 ]
+  ! GE              [ shift and go to state 38 ]
 
 
-state 51
+state 55
 
     (34) expression -> expression GT expression .
     (30) expression -> expression . EQUAL expression
@@ -1257,24 +1378,25 @@ state 51
     GT              reduce using rule 34 (expression -> expression GT expression .)
     GE              reduce using rule 34 (expression -> expression GT expression .)
     RPAREN          reduce using rule 34 (expression -> expression GT expression .)
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    COMMA           reduce using rule 34 (expression -> expression GT expression .)
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
   ! PLUS            [ reduce using rule 34 (expression -> expression GT expression .) ]
   ! MINUS           [ reduce using rule 34 (expression -> expression GT expression .) ]
   ! TIMES           [ reduce using rule 34 (expression -> expression GT expression .) ]
   ! DIV             [ reduce using rule 34 (expression -> expression GT expression .) ]
-  ! EQUAL           [ shift and go to state 32 ]
-  ! NOT_EQUAL       [ shift and go to state 33 ]
-  ! LT              [ shift and go to state 34 ]
-  ! LE              [ shift and go to state 35 ]
-  ! GT              [ shift and go to state 36 ]
-  ! GE              [ shift and go to state 37 ]
+  ! EQUAL           [ shift and go to state 33 ]
+  ! NOT_EQUAL       [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 35 ]
+  ! LE              [ shift and go to state 36 ]
+  ! GT              [ shift and go to state 37 ]
+  ! GE              [ shift and go to state 38 ]
 
 
-state 52
+state 56
 
     (35) expression -> expression GE expression .
     (30) expression -> expression . EQUAL expression
@@ -1296,24 +1418,25 @@ state 52
     GT              reduce using rule 35 (expression -> expression GE expression .)
     GE              reduce using rule 35 (expression -> expression GE expression .)
     RPAREN          reduce using rule 35 (expression -> expression GE expression .)
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    COMMA           reduce using rule 35 (expression -> expression GE expression .)
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
   ! PLUS            [ reduce using rule 35 (expression -> expression GE expression .) ]
   ! MINUS           [ reduce using rule 35 (expression -> expression GE expression .) ]
   ! TIMES           [ reduce using rule 35 (expression -> expression GE expression .) ]
   ! DIV             [ reduce using rule 35 (expression -> expression GE expression .) ]
-  ! EQUAL           [ shift and go to state 32 ]
-  ! NOT_EQUAL       [ shift and go to state 33 ]
-  ! LT              [ shift and go to state 34 ]
-  ! LE              [ shift and go to state 35 ]
-  ! GT              [ shift and go to state 36 ]
-  ! GE              [ shift and go to state 37 ]
+  ! EQUAL           [ shift and go to state 33 ]
+  ! NOT_EQUAL       [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 35 ]
+  ! LE              [ shift and go to state 36 ]
+  ! GT              [ shift and go to state 37 ]
+  ! GE              [ shift and go to state 38 ]
 
 
-state 53
+state 57
 
     (36) expression -> expression PLUS expression .
     (30) expression -> expression . EQUAL expression
@@ -1337,22 +1460,23 @@ state 53
     PLUS            reduce using rule 36 (expression -> expression PLUS expression .)
     MINUS           reduce using rule 36 (expression -> expression PLUS expression .)
     RPAREN          reduce using rule 36 (expression -> expression PLUS expression .)
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    COMMA           reduce using rule 36 (expression -> expression PLUS expression .)
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
   ! TIMES           [ reduce using rule 36 (expression -> expression PLUS expression .) ]
   ! DIV             [ reduce using rule 36 (expression -> expression PLUS expression .) ]
-  ! EQUAL           [ shift and go to state 32 ]
-  ! NOT_EQUAL       [ shift and go to state 33 ]
-  ! LT              [ shift and go to state 34 ]
-  ! LE              [ shift and go to state 35 ]
-  ! GT              [ shift and go to state 36 ]
-  ! GE              [ shift and go to state 37 ]
-  ! PLUS            [ shift and go to state 38 ]
-  ! MINUS           [ shift and go to state 39 ]
+  ! EQUAL           [ shift and go to state 33 ]
+  ! NOT_EQUAL       [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 35 ]
+  ! LE              [ shift and go to state 36 ]
+  ! GT              [ shift and go to state 37 ]
+  ! GE              [ shift and go to state 38 ]
+  ! PLUS            [ shift and go to state 39 ]
+  ! MINUS           [ shift and go to state 40 ]
 
 
-state 54
+state 58
 
     (37) expression -> expression MINUS expression .
     (30) expression -> expression . EQUAL expression
@@ -1376,22 +1500,23 @@ state 54
     PLUS            reduce using rule 37 (expression -> expression MINUS expression .)
     MINUS           reduce using rule 37 (expression -> expression MINUS expression .)
     RPAREN          reduce using rule 37 (expression -> expression MINUS expression .)
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    COMMA           reduce using rule 37 (expression -> expression MINUS expression .)
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
   ! TIMES           [ reduce using rule 37 (expression -> expression MINUS expression .) ]
   ! DIV             [ reduce using rule 37 (expression -> expression MINUS expression .) ]
-  ! EQUAL           [ shift and go to state 32 ]
-  ! NOT_EQUAL       [ shift and go to state 33 ]
-  ! LT              [ shift and go to state 34 ]
-  ! LE              [ shift and go to state 35 ]
-  ! GT              [ shift and go to state 36 ]
-  ! GE              [ shift and go to state 37 ]
-  ! PLUS            [ shift and go to state 38 ]
-  ! MINUS           [ shift and go to state 39 ]
+  ! EQUAL           [ shift and go to state 33 ]
+  ! NOT_EQUAL       [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 35 ]
+  ! LE              [ shift and go to state 36 ]
+  ! GT              [ shift and go to state 37 ]
+  ! GE              [ shift and go to state 38 ]
+  ! PLUS            [ shift and go to state 39 ]
+  ! MINUS           [ shift and go to state 40 ]
 
 
-state 55
+state 59
 
     (38) expression -> expression TIMES expression .
     (30) expression -> expression . EQUAL expression
@@ -1417,20 +1542,21 @@ state 55
     TIMES           reduce using rule 38 (expression -> expression TIMES expression .)
     DIV             reduce using rule 38 (expression -> expression TIMES expression .)
     RPAREN          reduce using rule 38 (expression -> expression TIMES expression .)
+    COMMA           reduce using rule 38 (expression -> expression TIMES expression .)
 
-  ! EQUAL           [ shift and go to state 32 ]
-  ! NOT_EQUAL       [ shift and go to state 33 ]
-  ! LT              [ shift and go to state 34 ]
-  ! LE              [ shift and go to state 35 ]
-  ! GT              [ shift and go to state 36 ]
-  ! GE              [ shift and go to state 37 ]
-  ! PLUS            [ shift and go to state 38 ]
-  ! MINUS           [ shift and go to state 39 ]
-  ! TIMES           [ shift and go to state 40 ]
-  ! DIV             [ shift and go to state 41 ]
+  ! EQUAL           [ shift and go to state 33 ]
+  ! NOT_EQUAL       [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 35 ]
+  ! LE              [ shift and go to state 36 ]
+  ! GT              [ shift and go to state 37 ]
+  ! GE              [ shift and go to state 38 ]
+  ! PLUS            [ shift and go to state 39 ]
+  ! MINUS           [ shift and go to state 40 ]
+  ! TIMES           [ shift and go to state 41 ]
+  ! DIV             [ shift and go to state 42 ]
 
 
-state 56
+state 60
 
     (39) expression -> expression DIV expression .
     (30) expression -> expression . EQUAL expression
@@ -1456,20 +1582,21 @@ state 56
     TIMES           reduce using rule 39 (expression -> expression DIV expression .)
     DIV             reduce using rule 39 (expression -> expression DIV expression .)
     RPAREN          reduce using rule 39 (expression -> expression DIV expression .)
+    COMMA           reduce using rule 39 (expression -> expression DIV expression .)
 
-  ! EQUAL           [ shift and go to state 32 ]
-  ! NOT_EQUAL       [ shift and go to state 33 ]
-  ! LT              [ shift and go to state 34 ]
-  ! LE              [ shift and go to state 35 ]
-  ! GT              [ shift and go to state 36 ]
-  ! GE              [ shift and go to state 37 ]
-  ! PLUS            [ shift and go to state 38 ]
-  ! MINUS           [ shift and go to state 39 ]
-  ! TIMES           [ shift and go to state 40 ]
-  ! DIV             [ shift and go to state 41 ]
+  ! EQUAL           [ shift and go to state 33 ]
+  ! NOT_EQUAL       [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 35 ]
+  ! LE              [ shift and go to state 36 ]
+  ! GT              [ shift and go to state 37 ]
+  ! GE              [ shift and go to state 38 ]
+  ! PLUS            [ shift and go to state 39 ]
+  ! MINUS           [ shift and go to state 40 ]
+  ! TIMES           [ shift and go to state 41 ]
+  ! DIV             [ shift and go to state 42 ]
 
 
-state 57
+state 61
 
     (42) primary_expression -> LPAREN expression RPAREN .
 
@@ -1485,9 +1612,10 @@ state 57
     TIMES           reduce using rule 42 (primary_expression -> LPAREN expression RPAREN .)
     DIV             reduce using rule 42 (primary_expression -> LPAREN expression RPAREN .)
     RPAREN          reduce using rule 42 (primary_expression -> LPAREN expression RPAREN .)
+    COMMA           reduce using rule 42 (primary_expression -> LPAREN expression RPAREN .)
 
 
-state 58
+state 62
 
     (26) compound_statement -> LBRACE declarations . statements RBRACE
     (10) declarations -> declarations . declaration
@@ -1495,9 +1623,9 @@ state 58
     (15) statements -> .
     (12) declaration -> . type_specifier IDENTIFIER SEMICOLON
     (13) declaration -> . type_specifier IDENTIFIER ASSIGN expression SEMICOLON
-    (49) type_specifier -> . CHAR
-    (50) type_specifier -> . INT
-    (51) type_specifier -> . FLOAT
+    (54) type_specifier -> . CHAR
+    (55) type_specifier -> . INT
+    (56) type_specifier -> . FLOAT
 
     RBRACE          reduce using rule 15 (statements -> .)
     IF              reduce using rule 15 (statements -> .)
@@ -1517,11 +1645,11 @@ state 58
     INT             shift and go to state 7
     FLOAT           shift and go to state 8
 
-    statements                     shift and go to state 60
-    declaration                    shift and go to state 61
-    type_specifier                 shift and go to state 62
+    statements                     shift and go to state 66
+    declaration                    shift and go to state 67
+    type_specifier                 shift and go to state 68
 
-state 59
+state 63
 
     (8) parameter_list -> parameter_list COMMA type_specifier IDENTIFIER .
 
@@ -1529,7 +1657,64 @@ state 59
     RPAREN          reduce using rule 8 (parameter_list -> parameter_list COMMA type_specifier IDENTIFIER .)
 
 
-state 60
+state 64
+
+    (46) primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .
+
+    SEMICOLON       reduce using rule 46 (primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .)
+    EQUAL           reduce using rule 46 (primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .)
+    NOT_EQUAL       reduce using rule 46 (primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .)
+    LT              reduce using rule 46 (primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .)
+    LE              reduce using rule 46 (primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .)
+    GT              reduce using rule 46 (primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .)
+    GE              reduce using rule 46 (primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .)
+    PLUS            reduce using rule 46 (primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .)
+    MINUS           reduce using rule 46 (primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .)
+    TIMES           reduce using rule 46 (primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .)
+    DIV             reduce using rule 46 (primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .)
+    RPAREN          reduce using rule 46 (primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .)
+    COMMA           reduce using rule 46 (primary_expression -> IDENTIFIER LPAREN argument_list RPAREN .)
+
+
+state 65
+
+    (49) expression_list -> expression_list COMMA . expression
+    (29) expression -> . unary_expression
+    (30) expression -> . expression EQUAL expression
+    (31) expression -> . expression NOT_EQUAL expression
+    (32) expression -> . expression LT expression
+    (33) expression -> . expression LE expression
+    (34) expression -> . expression GT expression
+    (35) expression -> . expression GE expression
+    (36) expression -> . expression PLUS expression
+    (37) expression -> . expression MINUS expression
+    (38) expression -> . expression TIMES expression
+    (39) expression -> . expression DIV expression
+    (40) unary_expression -> . primary_expression
+    (41) unary_expression -> . unary_operator unary_expression
+    (42) primary_expression -> . LPAREN expression RPAREN
+    (43) primary_expression -> . NUMBER
+    (44) primary_expression -> . CHARACTER_LITERAL
+    (45) primary_expression -> . IDENTIFIER
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
+
+    LPAREN          shift and go to state 24
+    NUMBER          shift and go to state 25
+    CHARACTER_LITERAL shift and go to state 26
+    IDENTIFIER      shift and go to state 17
+    NOT             shift and go to state 27
+    MINUS           shift and go to state 21
+    PLUS            shift and go to state 20
+
+    expression                     shift and go to state 69
+    unary_expression               shift and go to state 19
+    primary_expression             shift and go to state 22
+    unary_operator                 shift and go to state 23
+
+state 66
 
     (26) compound_statement -> LBRACE declarations statements . RBRACE
     (14) statements -> statements . statement
@@ -1563,18 +1748,19 @@ state 60
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
-    RBRACE          shift and go to state 63
-    IF              shift and go to state 65
-    WHILE           shift and go to state 67
-    FOR             shift and go to state 68
-    IDENTIFIER      shift and go to state 70
-    RETURN          shift and go to state 72
-    LBRACE          shift and go to state 45
-    SEMICOLON       shift and go to state 71
+    RBRACE          shift and go to state 70
+    IF              shift and go to state 72
+    WHILE           shift and go to state 74
+    FOR             shift and go to state 75
+    IDENTIFIER      shift and go to state 77
+    RETURN          shift and go to state 79
+    LBRACE          shift and go to state 46
+    SEMICOLON       shift and go to state 78
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
     CHARACTER_LITERAL shift and go to state 26
@@ -1582,15 +1768,15 @@ state 60
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    statement                      shift and go to state 64
-    expression                     shift and go to state 66
-    expression_statement           shift and go to state 69
-    compound_statement             shift and go to state 73
+    statement                      shift and go to state 71
+    expression                     shift and go to state 73
+    expression_statement           shift and go to state 76
+    compound_statement             shift and go to state 80
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 61
+state 67
 
     (10) declarations -> declarations declaration .
 
@@ -1613,15 +1799,43 @@ state 61
     PLUS            reduce using rule 10 (declarations -> declarations declaration .)
 
 
-state 62
+state 68
 
     (12) declaration -> type_specifier . IDENTIFIER SEMICOLON
     (13) declaration -> type_specifier . IDENTIFIER ASSIGN expression SEMICOLON
 
-    IDENTIFIER      shift and go to state 74
+    IDENTIFIER      shift and go to state 81
 
 
-state 63
+state 69
+
+    (49) expression_list -> expression_list COMMA expression .
+    (30) expression -> expression . EQUAL expression
+    (31) expression -> expression . NOT_EQUAL expression
+    (32) expression -> expression . LT expression
+    (33) expression -> expression . LE expression
+    (34) expression -> expression . GT expression
+    (35) expression -> expression . GE expression
+    (36) expression -> expression . PLUS expression
+    (37) expression -> expression . MINUS expression
+    (38) expression -> expression . TIMES expression
+    (39) expression -> expression . DIV expression
+
+    COMMA           reduce using rule 49 (expression_list -> expression_list COMMA expression .)
+    RPAREN          reduce using rule 49 (expression_list -> expression_list COMMA expression .)
+    EQUAL           shift and go to state 33
+    NOT_EQUAL       shift and go to state 34
+    LT              shift and go to state 35
+    LE              shift and go to state 36
+    GT              shift and go to state 37
+    GE              shift and go to state 38
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
+
+
+state 70
 
     (26) compound_statement -> LBRACE declarations statements RBRACE .
 
@@ -1646,7 +1860,7 @@ state 63
     ELSE            reduce using rule 26 (compound_statement -> LBRACE declarations statements RBRACE .)
 
 
-state 64
+state 71
 
     (14) statements -> statements statement .
 
@@ -1666,15 +1880,15 @@ state 64
     PLUS            reduce using rule 14 (statements -> statements statement .)
 
 
-state 65
+state 72
 
     (16) statement -> IF . LPAREN expression RPAREN statement
     (17) statement -> IF . LPAREN expression RPAREN statement ELSE statement
 
-    LPAREN          shift and go to state 75
+    LPAREN          shift and go to state 82
 
 
-state 66
+state 73
 
     (28) expression_statement -> expression . SEMICOLON
     (30) expression -> expression . EQUAL expression
@@ -1688,35 +1902,35 @@ state 66
     (38) expression -> expression . TIMES expression
     (39) expression -> expression . DIV expression
 
-    SEMICOLON       shift and go to state 76
-    EQUAL           shift and go to state 32
-    NOT_EQUAL       shift and go to state 33
-    LT              shift and go to state 34
-    LE              shift and go to state 35
-    GT              shift and go to state 36
-    GE              shift and go to state 37
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    SEMICOLON       shift and go to state 83
+    EQUAL           shift and go to state 33
+    NOT_EQUAL       shift and go to state 34
+    LT              shift and go to state 35
+    LE              shift and go to state 36
+    GT              shift and go to state 37
+    GE              shift and go to state 38
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
 
-state 67
+state 74
 
     (18) statement -> WHILE . LPAREN expression RPAREN statement
 
-    LPAREN          shift and go to state 77
+    LPAREN          shift and go to state 84
 
 
-state 68
+state 75
 
     (19) statement -> FOR . LPAREN expression_statement expression_statement RPAREN statement
     (20) statement -> FOR . LPAREN expression_statement expression_statement expression RPAREN statement
 
-    LPAREN          shift and go to state 78
+    LPAREN          shift and go to state 85
 
 
-state 69
+state 76
 
     (25) statement -> expression_statement .
 
@@ -1737,12 +1951,13 @@ state 69
     ELSE            reduce using rule 25 (statement -> expression_statement .)
 
 
-state 70
+state 77
 
     (21) statement -> IDENTIFIER . ASSIGN expression SEMICOLON
     (45) primary_expression -> IDENTIFIER .
+    (46) primary_expression -> IDENTIFIER . LPAREN argument_list RPAREN
 
-    ASSIGN          shift and go to state 79
+    ASSIGN          shift and go to state 86
     SEMICOLON       reduce using rule 45 (primary_expression -> IDENTIFIER .)
     EQUAL           reduce using rule 45 (primary_expression -> IDENTIFIER .)
     NOT_EQUAL       reduce using rule 45 (primary_expression -> IDENTIFIER .)
@@ -1754,9 +1969,10 @@ state 70
     MINUS           reduce using rule 45 (primary_expression -> IDENTIFIER .)
     TIMES           reduce using rule 45 (primary_expression -> IDENTIFIER .)
     DIV             reduce using rule 45 (primary_expression -> IDENTIFIER .)
+    LPAREN          shift and go to state 31
 
 
-state 71
+state 78
 
     (27) expression_statement -> SEMICOLON .
 
@@ -1778,7 +1994,7 @@ state 71
     ELSE            reduce using rule 27 (expression_statement -> SEMICOLON .)
 
 
-state 72
+state 79
 
     (22) statement -> RETURN . SEMICOLON
     (23) statement -> RETURN . expression SEMICOLON
@@ -1799,11 +2015,12 @@ state 72
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
-    SEMICOLON       shift and go to state 80
+    SEMICOLON       shift and go to state 87
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
     CHARACTER_LITERAL shift and go to state 26
@@ -1812,12 +2029,12 @@ state 72
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 81
+    expression                     shift and go to state 88
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 73
+state 80
 
     (24) statement -> compound_statement .
 
@@ -1838,7 +2055,7 @@ state 73
     ELSE            reduce using rule 24 (statement -> compound_statement .)
 
 
-state 74
+state 81
 
     (12) declaration -> type_specifier IDENTIFIER . SEMICOLON
     (13) declaration -> type_specifier IDENTIFIER . ASSIGN expression SEMICOLON
@@ -1847,7 +2064,7 @@ state 74
     ASSIGN          shift and go to state 13
 
 
-state 75
+state 82
 
     (16) statement -> IF LPAREN . expression RPAREN statement
     (17) statement -> IF LPAREN . expression RPAREN statement ELSE statement
@@ -1868,9 +2085,10 @@ state 75
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -1880,12 +2098,12 @@ state 75
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 82
+    expression                     shift and go to state 89
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 76
+state 83
 
     (28) expression_statement -> expression SEMICOLON .
 
@@ -1907,7 +2125,7 @@ state 76
     ELSE            reduce using rule 28 (expression_statement -> expression SEMICOLON .)
 
 
-state 77
+state 84
 
     (18) statement -> WHILE LPAREN . expression RPAREN statement
     (29) expression -> . unary_expression
@@ -1927,9 +2145,10 @@ state 77
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -1939,12 +2158,12 @@ state 77
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 83
+    expression                     shift and go to state 90
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 78
+state 85
 
     (19) statement -> FOR LPAREN . expression_statement expression_statement RPAREN statement
     (20) statement -> FOR LPAREN . expression_statement expression_statement expression RPAREN statement
@@ -1967,11 +2186,12 @@ state 78
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
-    SEMICOLON       shift and go to state 71
+    SEMICOLON       shift and go to state 78
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
     CHARACTER_LITERAL shift and go to state 26
@@ -1980,13 +2200,13 @@ state 78
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression_statement           shift and go to state 84
-    expression                     shift and go to state 66
+    expression_statement           shift and go to state 91
+    expression                     shift and go to state 73
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 79
+state 86
 
     (21) statement -> IDENTIFIER ASSIGN . expression SEMICOLON
     (29) expression -> . unary_expression
@@ -2006,9 +2226,10 @@ state 79
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
@@ -2018,12 +2239,12 @@ state 79
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 85
+    expression                     shift and go to state 92
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 80
+state 87
 
     (22) statement -> RETURN SEMICOLON .
 
@@ -2044,7 +2265,7 @@ state 80
     ELSE            reduce using rule 22 (statement -> RETURN SEMICOLON .)
 
 
-state 81
+state 88
 
     (23) statement -> RETURN expression . SEMICOLON
     (30) expression -> expression . EQUAL expression
@@ -2058,20 +2279,20 @@ state 81
     (38) expression -> expression . TIMES expression
     (39) expression -> expression . DIV expression
 
-    SEMICOLON       shift and go to state 86
-    EQUAL           shift and go to state 32
-    NOT_EQUAL       shift and go to state 33
-    LT              shift and go to state 34
-    LE              shift and go to state 35
-    GT              shift and go to state 36
-    GE              shift and go to state 37
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    SEMICOLON       shift and go to state 93
+    EQUAL           shift and go to state 33
+    NOT_EQUAL       shift and go to state 34
+    LT              shift and go to state 35
+    LE              shift and go to state 36
+    GT              shift and go to state 37
+    GE              shift and go to state 38
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
 
-state 82
+state 89
 
     (16) statement -> IF LPAREN expression . RPAREN statement
     (17) statement -> IF LPAREN expression . RPAREN statement ELSE statement
@@ -2086,20 +2307,20 @@ state 82
     (38) expression -> expression . TIMES expression
     (39) expression -> expression . DIV expression
 
-    RPAREN          shift and go to state 87
-    EQUAL           shift and go to state 32
-    NOT_EQUAL       shift and go to state 33
-    LT              shift and go to state 34
-    LE              shift and go to state 35
-    GT              shift and go to state 36
-    GE              shift and go to state 37
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    RPAREN          shift and go to state 94
+    EQUAL           shift and go to state 33
+    NOT_EQUAL       shift and go to state 34
+    LT              shift and go to state 35
+    LE              shift and go to state 36
+    GT              shift and go to state 37
+    GE              shift and go to state 38
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
 
-state 83
+state 90
 
     (18) statement -> WHILE LPAREN expression . RPAREN statement
     (30) expression -> expression . EQUAL expression
@@ -2113,20 +2334,20 @@ state 83
     (38) expression -> expression . TIMES expression
     (39) expression -> expression . DIV expression
 
-    RPAREN          shift and go to state 88
-    EQUAL           shift and go to state 32
-    NOT_EQUAL       shift and go to state 33
-    LT              shift and go to state 34
-    LE              shift and go to state 35
-    GT              shift and go to state 36
-    GE              shift and go to state 37
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    RPAREN          shift and go to state 95
+    EQUAL           shift and go to state 33
+    NOT_EQUAL       shift and go to state 34
+    LT              shift and go to state 35
+    LE              shift and go to state 36
+    GT              shift and go to state 37
+    GE              shift and go to state 38
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
 
-state 84
+state 91
 
     (19) statement -> FOR LPAREN expression_statement . expression_statement RPAREN statement
     (20) statement -> FOR LPAREN expression_statement . expression_statement expression RPAREN statement
@@ -2149,11 +2370,12 @@ state 84
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
-    SEMICOLON       shift and go to state 71
+    SEMICOLON       shift and go to state 78
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
     CHARACTER_LITERAL shift and go to state 26
@@ -2162,13 +2384,13 @@ state 84
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression_statement           shift and go to state 89
-    expression                     shift and go to state 66
+    expression_statement           shift and go to state 96
+    expression                     shift and go to state 73
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 85
+state 92
 
     (21) statement -> IDENTIFIER ASSIGN expression . SEMICOLON
     (30) expression -> expression . EQUAL expression
@@ -2182,20 +2404,20 @@ state 85
     (38) expression -> expression . TIMES expression
     (39) expression -> expression . DIV expression
 
-    SEMICOLON       shift and go to state 90
-    EQUAL           shift and go to state 32
-    NOT_EQUAL       shift and go to state 33
-    LT              shift and go to state 34
-    LE              shift and go to state 35
-    GT              shift and go to state 36
-    GE              shift and go to state 37
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    SEMICOLON       shift and go to state 97
+    EQUAL           shift and go to state 33
+    NOT_EQUAL       shift and go to state 34
+    LT              shift and go to state 35
+    LE              shift and go to state 36
+    GT              shift and go to state 37
+    GE              shift and go to state 38
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
 
-state 86
+state 93
 
     (23) statement -> RETURN expression SEMICOLON .
 
@@ -2216,7 +2438,7 @@ state 86
     ELSE            reduce using rule 23 (statement -> RETURN expression SEMICOLON .)
 
 
-state 87
+state 94
 
     (16) statement -> IF LPAREN expression RPAREN . statement
     (17) statement -> IF LPAREN expression RPAREN . statement ELSE statement
@@ -2250,17 +2472,18 @@ state 87
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
-    IF              shift and go to state 65
-    WHILE           shift and go to state 67
-    FOR             shift and go to state 68
-    IDENTIFIER      shift and go to state 70
-    RETURN          shift and go to state 72
-    LBRACE          shift and go to state 45
-    SEMICOLON       shift and go to state 71
+    IF              shift and go to state 72
+    WHILE           shift and go to state 74
+    FOR             shift and go to state 75
+    IDENTIFIER      shift and go to state 77
+    RETURN          shift and go to state 79
+    LBRACE          shift and go to state 46
+    SEMICOLON       shift and go to state 78
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
     CHARACTER_LITERAL shift and go to state 26
@@ -2268,15 +2491,15 @@ state 87
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 66
-    statement                      shift and go to state 91
-    expression_statement           shift and go to state 69
-    compound_statement             shift and go to state 73
+    expression                     shift and go to state 73
+    statement                      shift and go to state 98
+    expression_statement           shift and go to state 76
+    compound_statement             shift and go to state 80
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 88
+state 95
 
     (18) statement -> WHILE LPAREN expression RPAREN . statement
     (16) statement -> . IF LPAREN expression RPAREN statement
@@ -2309,17 +2532,18 @@ state 88
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
-    IF              shift and go to state 65
-    WHILE           shift and go to state 67
-    FOR             shift and go to state 68
-    IDENTIFIER      shift and go to state 70
-    RETURN          shift and go to state 72
-    LBRACE          shift and go to state 45
-    SEMICOLON       shift and go to state 71
+    IF              shift and go to state 72
+    WHILE           shift and go to state 74
+    FOR             shift and go to state 75
+    IDENTIFIER      shift and go to state 77
+    RETURN          shift and go to state 79
+    LBRACE          shift and go to state 46
+    SEMICOLON       shift and go to state 78
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
     CHARACTER_LITERAL shift and go to state 26
@@ -2327,15 +2551,15 @@ state 88
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 66
-    statement                      shift and go to state 92
-    expression_statement           shift and go to state 69
-    compound_statement             shift and go to state 73
+    expression                     shift and go to state 73
+    statement                      shift and go to state 99
+    expression_statement           shift and go to state 76
+    compound_statement             shift and go to state 80
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 89
+state 96
 
     (19) statement -> FOR LPAREN expression_statement expression_statement . RPAREN statement
     (20) statement -> FOR LPAREN expression_statement expression_statement . expression RPAREN statement
@@ -2356,11 +2580,12 @@ state 89
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
-    RPAREN          shift and go to state 93
+    RPAREN          shift and go to state 100
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
     CHARACTER_LITERAL shift and go to state 26
@@ -2369,12 +2594,12 @@ state 89
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 94
+    expression                     shift and go to state 101
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 90
+state 97
 
     (21) statement -> IDENTIFIER ASSIGN expression SEMICOLON .
 
@@ -2395,7 +2620,7 @@ state 90
     ELSE            reduce using rule 21 (statement -> IDENTIFIER ASSIGN expression SEMICOLON .)
 
 
-state 91
+state 98
 
     (16) statement -> IF LPAREN expression RPAREN statement .
     (17) statement -> IF LPAREN expression RPAREN statement . ELSE statement
@@ -2415,12 +2640,12 @@ state 91
     NOT             reduce using rule 16 (statement -> IF LPAREN expression RPAREN statement .)
     MINUS           reduce using rule 16 (statement -> IF LPAREN expression RPAREN statement .)
     PLUS            reduce using rule 16 (statement -> IF LPAREN expression RPAREN statement .)
-    ELSE            shift and go to state 95
+    ELSE            shift and go to state 102
 
   ! ELSE            [ reduce using rule 16 (statement -> IF LPAREN expression RPAREN statement .) ]
 
 
-state 92
+state 99
 
     (18) statement -> WHILE LPAREN expression RPAREN statement .
 
@@ -2441,7 +2666,7 @@ state 92
     ELSE            reduce using rule 18 (statement -> WHILE LPAREN expression RPAREN statement .)
 
 
-state 93
+state 100
 
     (19) statement -> FOR LPAREN expression_statement expression_statement RPAREN . statement
     (16) statement -> . IF LPAREN expression RPAREN statement
@@ -2474,17 +2699,18 @@ state 93
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
-    IF              shift and go to state 65
-    WHILE           shift and go to state 67
-    FOR             shift and go to state 68
-    IDENTIFIER      shift and go to state 70
-    RETURN          shift and go to state 72
-    LBRACE          shift and go to state 45
-    SEMICOLON       shift and go to state 71
+    IF              shift and go to state 72
+    WHILE           shift and go to state 74
+    FOR             shift and go to state 75
+    IDENTIFIER      shift and go to state 77
+    RETURN          shift and go to state 79
+    LBRACE          shift and go to state 46
+    SEMICOLON       shift and go to state 78
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
     CHARACTER_LITERAL shift and go to state 26
@@ -2492,15 +2718,15 @@ state 93
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression_statement           shift and go to state 69
-    statement                      shift and go to state 96
-    expression                     shift and go to state 66
-    compound_statement             shift and go to state 73
+    expression_statement           shift and go to state 76
+    statement                      shift and go to state 103
+    expression                     shift and go to state 73
+    compound_statement             shift and go to state 80
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 94
+state 101
 
     (20) statement -> FOR LPAREN expression_statement expression_statement expression . RPAREN statement
     (30) expression -> expression . EQUAL expression
@@ -2514,20 +2740,20 @@ state 94
     (38) expression -> expression . TIMES expression
     (39) expression -> expression . DIV expression
 
-    RPAREN          shift and go to state 97
-    EQUAL           shift and go to state 32
-    NOT_EQUAL       shift and go to state 33
-    LT              shift and go to state 34
-    LE              shift and go to state 35
-    GT              shift and go to state 36
-    GE              shift and go to state 37
-    PLUS            shift and go to state 38
-    MINUS           shift and go to state 39
-    TIMES           shift and go to state 40
-    DIV             shift and go to state 41
+    RPAREN          shift and go to state 104
+    EQUAL           shift and go to state 33
+    NOT_EQUAL       shift and go to state 34
+    LT              shift and go to state 35
+    LE              shift and go to state 36
+    GT              shift and go to state 37
+    GE              shift and go to state 38
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIV             shift and go to state 42
 
 
-state 95
+state 102
 
     (17) statement -> IF LPAREN expression RPAREN statement ELSE . statement
     (16) statement -> . IF LPAREN expression RPAREN statement
@@ -2560,17 +2786,18 @@ state 95
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
-    IF              shift and go to state 65
-    WHILE           shift and go to state 67
-    FOR             shift and go to state 68
-    IDENTIFIER      shift and go to state 70
-    RETURN          shift and go to state 72
-    LBRACE          shift and go to state 45
-    SEMICOLON       shift and go to state 71
+    IF              shift and go to state 72
+    WHILE           shift and go to state 74
+    FOR             shift and go to state 75
+    IDENTIFIER      shift and go to state 77
+    RETURN          shift and go to state 79
+    LBRACE          shift and go to state 46
+    SEMICOLON       shift and go to state 78
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
     CHARACTER_LITERAL shift and go to state 26
@@ -2578,15 +2805,15 @@ state 95
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression                     shift and go to state 66
-    statement                      shift and go to state 98
-    expression_statement           shift and go to state 69
-    compound_statement             shift and go to state 73
+    expression                     shift and go to state 73
+    statement                      shift and go to state 105
+    expression_statement           shift and go to state 76
+    compound_statement             shift and go to state 80
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 96
+state 103
 
     (19) statement -> FOR LPAREN expression_statement expression_statement RPAREN statement .
 
@@ -2607,7 +2834,7 @@ state 96
     ELSE            reduce using rule 19 (statement -> FOR LPAREN expression_statement expression_statement RPAREN statement .)
 
 
-state 97
+state 104
 
     (20) statement -> FOR LPAREN expression_statement expression_statement expression RPAREN . statement
     (16) statement -> . IF LPAREN expression RPAREN statement
@@ -2640,17 +2867,18 @@ state 97
     (43) primary_expression -> . NUMBER
     (44) primary_expression -> . CHARACTER_LITERAL
     (45) primary_expression -> . IDENTIFIER
-    (46) unary_operator -> . NOT
-    (47) unary_operator -> . MINUS
-    (48) unary_operator -> . PLUS
+    (46) primary_expression -> . IDENTIFIER LPAREN argument_list RPAREN
+    (51) unary_operator -> . NOT
+    (52) unary_operator -> . MINUS
+    (53) unary_operator -> . PLUS
 
-    IF              shift and go to state 65
-    WHILE           shift and go to state 67
-    FOR             shift and go to state 68
-    IDENTIFIER      shift and go to state 70
-    RETURN          shift and go to state 72
-    LBRACE          shift and go to state 45
-    SEMICOLON       shift and go to state 71
+    IF              shift and go to state 72
+    WHILE           shift and go to state 74
+    FOR             shift and go to state 75
+    IDENTIFIER      shift and go to state 77
+    RETURN          shift and go to state 79
+    LBRACE          shift and go to state 46
+    SEMICOLON       shift and go to state 78
     LPAREN          shift and go to state 24
     NUMBER          shift and go to state 25
     CHARACTER_LITERAL shift and go to state 26
@@ -2658,15 +2886,15 @@ state 97
     MINUS           shift and go to state 21
     PLUS            shift and go to state 20
 
-    expression_statement           shift and go to state 69
-    expression                     shift and go to state 66
-    statement                      shift and go to state 99
-    compound_statement             shift and go to state 73
+    expression_statement           shift and go to state 76
+    expression                     shift and go to state 73
+    statement                      shift and go to state 106
+    compound_statement             shift and go to state 80
     unary_expression               shift and go to state 19
     primary_expression             shift and go to state 22
     unary_operator                 shift and go to state 23
 
-state 98
+state 105
 
     (17) statement -> IF LPAREN expression RPAREN statement ELSE statement .
 
@@ -2687,7 +2915,7 @@ state 98
     ELSE            reduce using rule 17 (statement -> IF LPAREN expression RPAREN statement ELSE statement .)
 
 
-state 99
+state 106
 
     (20) statement -> FOR LPAREN expression_statement expression_statement expression RPAREN statement .
 
@@ -2710,4 +2938,4 @@ state 99
 WARNING: 
 WARNING: Conflicts:
 WARNING: 
-WARNING: shift/reduce conflict for ELSE in state 91 resolved as shift
+WARNING: shift/reduce conflict for ELSE in state 98 resolved as shift

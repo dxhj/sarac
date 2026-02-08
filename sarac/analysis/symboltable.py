@@ -1,7 +1,7 @@
 from sarac.analysis.table import SymbolTable
 from sarac.analysis.attributes import FunctionAttributes, VariableAttributes
 from sarac.frontend.ast import TranslationUnitList, FunctionDefinition,\
-    CompoundStatement, Declaration, Assignment, Reference
+    CompoundStatement, Declaration, Assignment, Reference, FunctionCall
 from sarac.utils.error import Error
 
 
@@ -50,6 +50,17 @@ class BuildSymbolTableVisitor(object):
             else:
                 node.type = attributes.type
                 node.attributes = attributes
+
+        elif isinstance(node, FunctionCall):
+            # Look up the function name in symbol table
+            attributes = self.symbol_table.lookup(node.name)
+            if attributes is None:
+                Error.name_error("undeclared function \"%s\"" % node.name, 
+                               node.coord.line if node.coord else 0, 
+                               node.coord.column if node.coord else 0)
+            else:
+                node.identifier.attributes = attributes
+                node.identifier.type = attributes.type
 
         node.accept_children(self)
 
