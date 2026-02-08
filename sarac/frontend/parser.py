@@ -84,10 +84,16 @@ class Parser(object):
             p[0] = DeclarationList([])
 
     def p_declaration(self, p):
-        """declaration : type_specifier IDENTIFIER SEMICOLON"""
+        """declaration : type_specifier IDENTIFIER SEMICOLON
+                       | type_specifier IDENTIFIER ASSIGN expression SEMICOLON"""
         identifier = Identifier(p[2][0], p[1])
         identifier.coord = Coord(p[2][1], p[2][2])
-        p[0] = Declaration(p[1], identifier)
+        if len(p) == 6:
+            # Declaration with initialization: type IDENTIFIER = expression;
+            p[0] = Declaration(p[1], identifier, p[4])
+        else:
+            # Declaration without initialization: type IDENTIFIER;
+            p[0] = Declaration(p[1], identifier)
         p[0].coord = identifier.coord
 
     def p_statement_list(self, p):

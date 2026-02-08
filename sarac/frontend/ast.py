@@ -82,10 +82,14 @@ class If(Node):
 
 
 class Declaration(Node):
-    def __init__(self, id_type, identifier):
+    def __init__(self, id_type, identifier, initializer=None):
         super(Declaration, self).__init__()
-        self.children = [identifier]
+        if initializer is not None:
+            self.children = [identifier, initializer]
+        else:
+            self.children = [identifier]
         self.type = id_type
+        self.initializer = initializer
         # self.identifier = identifier
         # self.identifier.type = id_type
 
