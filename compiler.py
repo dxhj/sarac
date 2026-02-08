@@ -37,3 +37,13 @@ with open('examples/in.sra', 'r') as f:
         for mir_func in mir_generator.functions:
             print(mir_func)
             print()
+        
+        # Generate LLVM IR
+        from sarac.ir.llvm import LLVMGenerator
+        llvm_generator = LLVMGenerator()
+        llvm_ir = llvm_generator.generate(mir_generator.functions)
+        
+        print("\n" + "=" * 60)
+        print("Generated LLVM IR")
+        print("=" * 60)
+        print(llvm_ir)

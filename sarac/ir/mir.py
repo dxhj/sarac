@@ -54,10 +54,11 @@ class BasicBlock:
 class MIRFunction:
     """MIR representation of a function."""
     
-    def __init__(self, name, return_type, parameters):
+    def __init__(self, name, return_type, parameters, parameter_types=None):
         self.name = name
         self.return_type = return_type
         self.parameters = parameters  # List of parameter names
+        self.parameter_types = parameter_types or []  # List of parameter types
         self.blocks = []  # List of basic blocks
         self.entry_block = None  # Entry basic block
         self.temp_counter = 0  # Counter for generating temporaries
@@ -160,15 +161,21 @@ class MIRGenerator:
         
         # Get parameters
         parameters = []
+        parameter_types = []
         if len(node.children) > 1 and node.children[1]:
             param_list = node.children[1]
             for param in param_list.children:
                 if hasattr(param, 'children') and param.children:
                     param_name = param.children[0].name
                     parameters.append(param_name)
+                    # Get parameter type
+                    if hasattr(param, 'type'):
+                        parameter_types.append(param.type)
+                    else:
+                        parameter_types.append("int")  # Default
         
         # Create MIR function
-        mir_func = MIRFunction(func_name, return_type, parameters)
+        mir_func = MIRFunction(func_name, return_type, parameters, parameter_types)
         self.current_function = mir_func
         self.functions.append(mir_func)
         
