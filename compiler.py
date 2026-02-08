@@ -24,3 +24,16 @@ with open('examples/in.sra', 'r') as f:
 
         ast_optimizer = OptimizerVisitor()
         program.accept_children(ast_optimizer)
+
+        # Generate MIR (Mid-level Intermediate Representation)
+        from sarac.ir.mir import MIRGenerator
+        mir_generator = MIRGenerator()
+        program.accept(mir_generator)
+        
+        # Print MIR for each function
+        print("\n" + "=" * 60)
+        print("Generated MIR")
+        print("=" * 60)
+        for mir_func in mir_generator.functions:
+            print(mir_func)
+            print()
