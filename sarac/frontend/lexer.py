@@ -24,6 +24,7 @@ class Lexer(object):
     tokens = [
         'IDENTIFIER',
         'NUMBER',
+        'CHARACTER_LITERAL',
         'LT',
         'LE',
         'GT',
@@ -61,6 +62,31 @@ class Lexer(object):
     def t_NUMBER(self, t):
         r"""[0-9]+(\.[0-9]+)?"""
         t.value = (t.value, t.lineno, self.token_column(t))
+        return t
+
+    def t_CHARACTER_LITERAL(self, t):
+        r"""'([^'\\]|\\.)'"""
+        # Extract the character value, handling escape sequences
+        char_content = t.value[1:-1]  # Remove quotes
+        
+        # Handle escape sequences
+        if len(char_content) == 2 and char_content[0] == '\\':
+            escape_char = char_content[1]
+            escape_map = {
+                'n': '\n',
+                't': '\t',
+                'r': '\r',
+                '\\': '\\',
+                "'": "'",
+                '"': '"',
+                '0': '\0'
+            }
+            char_value = escape_map.get(escape_char, escape_char)
+        else:
+            char_value = char_content
+        
+        # Store the character value as a string (single character)
+        t.value = (char_value, t.lineno, self.token_column(t))
         return t
 
     def t_IDENTIFIER(self, t):

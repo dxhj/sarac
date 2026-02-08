@@ -200,6 +200,15 @@ class Parser(object):
         else:
             p[0] = Constant(p[1][0], integerTypeDescriptor)
 
+    def p_primary_expression_character(self, p):
+        """primary_expression : CHARACTER_LITERAL"""
+        # p[1] is a tuple: (char_value, line, column)
+        # Create a Constant with charTypeDescriptor
+        # Store the character as its ASCII value or as the character itself
+        char_value = p[1][0]
+        p[0] = Constant(char_value, charTypeDescriptor)
+        p[0].coord = Coord(p[1][1], p[1][2])
+
     def p_primary_expression_ref(self, p):
         """primary_expression : IDENTIFIER"""
         reference = Reference(p[1][0])
