@@ -129,7 +129,6 @@ class Lexer(object):
 
     def t_PLUS(self, t):
         r"""\+"""
-        print(t)
         t.value = (t.value, t.lineno, self.token_column(t))
         return t
 

@@ -14,12 +14,12 @@ class Parser(object):
         ('left', 'TIMES', 'DIV'),
     )
 
-    def __init__(self):
+    def __init__(self, debug=False):
         self.error_count = 0
         self.lexer = Lexer()
-        self.lexer.build(optimize=False, debug=True)
+        self.lexer.build(optimize=False, debug=debug)
         self.tokens = self.lexer.tokens
-        self.parser = yacc.yacc(module=self, optimize=False, debug=True)
+        self.parser = yacc.yacc(module=self, optimize=False, debug=debug)
 
     def parse(self, input_text):
         return self.parser.parse(input_text)
