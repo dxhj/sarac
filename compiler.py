@@ -91,6 +91,20 @@ try:
             print(f"\n✓ MIR saved to {mir_file}")
             sys.exit(0)
         
+        # Check if user wants to save .s (assembly) file (via command line argument)
+        save_asm = '--asm' in sys.argv or '--gas' in sys.argv
+        
+        # If user wants to save assembly, do that and exit
+        if save_asm:
+            from sarac.ir.gas import GASGenerator
+            gas_generator = GASGenerator()
+            asm_code = gas_generator.generate(mir_generator.functions)
+            asm_file = output_name + ".s"
+            with open(asm_file, 'w') as f:
+                f.write(asm_code)
+            print(f"\n✓ Assembly saved to {asm_file}")
+            sys.exit(0)
+        
         # Generate LLVM IR
         from sarac.ir.llvm import LLVMGenerator
         llvm_generator = LLVMGenerator()
