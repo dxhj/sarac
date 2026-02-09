@@ -39,10 +39,10 @@ class Parser(object):
         p[0] = p[1]
 
     def p_function_definition(self, p):
-        """function_definition : type_specifier IDENTIFIER LPAREN parameters RPAREN compound_statement"""
-        identifier = Identifier(p[2][0])
-        identifier.coord = Coord(p[2][1], p[2][2])
-        p[0] = FunctionDefinition(identifier, p[1], p[4], p[6])
+        """function_definition : IDENTIFIER LPAREN parameters RPAREN COLON type_specifier compound_statement"""
+        identifier = Identifier(p[1][0])
+        identifier.coord = Coord(p[1][1], p[1][2])
+        p[0] = FunctionDefinition(identifier, p[6], p[3], p[7])
 
 
     def p_parameters(self, p):

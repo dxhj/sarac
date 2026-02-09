@@ -44,6 +44,7 @@ class Lexer(object):
         'RBRACE',
         'COMMA',
         'SEMICOLON',
+        'COLON',
         'EQUAL',
         'NOT_EQUAL',
         'ASSIGN',
@@ -225,6 +226,11 @@ class Lexer(object):
 
     def t_SEMICOLON(self, t):
         r""";"""
+        t.value = (t.value, t.lineno, self.token_column(t))
+        return t
+
+    def t_COLON(self, t):
+        r""":"""
         t.value = (t.value, t.lineno, self.token_column(t))
         return t
 
