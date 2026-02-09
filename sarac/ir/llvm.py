@@ -76,10 +76,15 @@ class LLVMGenerator:
                         
                         # If it's a string type, or if it's a multi-character string that's not numeric
                         if is_string_type or (isinstance(value, str) and len(value) > 1):
-                            # Check if it's not a numeric string
+                            # Check if it's not a numeric string (int or float)
+                            is_numeric = False
                             try:
-                                int(value)
-                            except ValueError:
+                                float(value)  # Try to parse as number (int or float)
+                                is_numeric = True
+                            except (ValueError, TypeError):
+                                pass
+                            
+                            if not is_numeric:
                                 # Not a number, it's a string literal
                                 if value not in self.string_literals:
                                     global_name = f"@.str{self.string_counter}"
@@ -302,13 +307,26 @@ class LLVMGenerator:
             # This ensures instruction numbering is sequential
             value = operands[0]
             # Check if it's a string literal
-            is_string = value in self.string_literals
+            # But exclude numeric strings (they should be treated as numbers, not strings)
+            is_string = False
+            if value in self.string_literals:
+                # Check if it's actually a numeric string that was incorrectly added
+                try:
+                    float(value)  # Try to parse as number
+                    # If it parses as a number, it's not a string literal
+                    is_string = False
+                except (ValueError, TypeError):
+                    # Can't parse as number, so it's a real string literal
+                    is_string = True
             
             # Also check type information if available
             if hasattr(instr, 'operand_types') and instr.operand_types and len(instr.operand_types) > 0:
                 type_str = str(instr.operand_types[0]).lower()
                 if type_str == "string":
                     is_string = True
+                elif type_str == "float" or type_str == "int":
+                    # Explicitly numeric type, not a string
+                    is_string = False
             
             if result:
                 if is_string:
@@ -332,9 +350,24 @@ class LLVMGenerator:
                         if isinstance(value, float):
                             llvm_type = "double"
                             self.temp_types[result] = "float"
-                        elif isinstance(value, str) and (len(value) >= 3 and value[0] == "'" and value[-1] == "'" or len(value) == 1):
-                            llvm_type = "i8"
-                            self.temp_types[result] = "char"
+                        elif isinstance(value, str):
+                            # Check if it's a float string (contains decimal point)
+                            try:
+                                float(value)
+                                if '.' in value or 'e' in value.lower() or 'E' in value:
+                                    llvm_type = "double"
+                                    self.temp_types[result] = "float"
+                                else:
+                                    llvm_type = "i32"
+                                    self.temp_types[result] = "int"
+                            except ValueError:
+                                # Check if it's a character literal
+                                if len(value) >= 3 and value[0] == "'" and value[-1] == "'" or len(value) == 1:
+                                    llvm_type = "i8"
+                                    self.temp_types[result] = "char"
+                                else:
+                                    llvm_type = "i32"
+                                    self.temp_types[result] = "int"
                         else:
                             llvm_type = "i32"
                             self.temp_types[result] = "int"
@@ -426,7 +459,7 @@ class LLVMGenerator:
             self.emit(f"  store {llvm_type} {llvm_value}, {llvm_type}* {llvm_var}")
         
         elif op == Op.ADD:
-            # Add: %t = add i32 %a, %b
+            # Add: %t = add i32 %a, %b or fadd double %a, %b
             a = self.get_llvm_value(operands[0])
             b = self.get_llvm_value(operands[1])
             
@@ -446,64 +479,201 @@ class LLVMGenerator:
                 b = ptr_as_int
                 b_type = "int"
             
-            llvm_type = "i32"
-            llvm_temp = self.new_llvm_temp()
-            self.emit(f"  {llvm_temp} = add {llvm_type} {a}, {b}")
-            if result:
-                self.temp_to_llvm[result] = llvm_temp
-                # Binary operations on numeric types produce numeric types
-                # If either is float, result is float; otherwise int
-                if a_type == "float" or b_type == "float":
+            # Check if we need floating-point operations
+            if a_type == "float" or b_type == "float":
+                # Use floating-point addition
+                llvm_type = "double"
+                # Convert integer operands to double if needed
+                if a_type != "float" and a.startswith('%'):
+                    # Convert i32 to double
+                    a_fp = self.new_llvm_temp()
+                    self.emit(f"  {a_fp} = sitofp i32 {a} to double")
+                    a = a_fp
+                elif a_type != "float" and not a.startswith('%'):
+                    # Constant - convert to float
+                    try:
+                        a = str(float(a))
+                    except ValueError:
+                        a_fp = self.new_llvm_temp()
+                        self.emit(f"  {a_fp} = sitofp i32 {a} to double")
+                        a = a_fp
+                
+                if b_type != "float" and b.startswith('%'):
+                    # Convert i32 to double
+                    b_fp = self.new_llvm_temp()
+                    self.emit(f"  {b_fp} = sitofp i32 {b} to double")
+                    b = b_fp
+                elif b_type != "float" and not b.startswith('%'):
+                    # Constant - convert to float
+                    try:
+                        b = str(float(b))
+                    except ValueError:
+                        b_fp = self.new_llvm_temp()
+                        self.emit(f"  {b_fp} = sitofp i32 {b} to double")
+                        b = b_fp
+                
+                llvm_temp = self.new_llvm_temp()
+                self.emit(f"  {llvm_temp} = fadd {llvm_type} {a}, {b}")
+                if result:
+                    self.temp_to_llvm[result] = llvm_temp
                     self.temp_types[result] = "float"
-                else:
+            else:
+                # Use integer addition
+                llvm_type = "i32"
+                llvm_temp = self.new_llvm_temp()
+                self.emit(f"  {llvm_temp} = add {llvm_type} {a}, {b}")
+                if result:
+                    self.temp_to_llvm[result] = llvm_temp
                     self.temp_types[result] = "int"
         
         elif op == Op.SUB:
-            # Subtract: %t = sub i32 %a, %b
+            # Subtract: %t = sub i32 %a, %b or fsub double %a, %b
             a = self.get_llvm_value(operands[0])
             b = self.get_llvm_value(operands[1])
-            llvm_type = "i32"
-            llvm_temp = self.new_llvm_temp()
-            self.emit(f"  {llvm_temp} = sub {llvm_type} {a}, {b}")
-            if result:
-                self.temp_to_llvm[result] = llvm_temp
-                a_type = self.temp_types.get(operands[0], "int")
-                b_type = self.temp_types.get(operands[1], "int")
-                if a_type == "float" or b_type == "float":
+            a_type = self.temp_types.get(operands[0], "int")
+            b_type = self.temp_types.get(operands[1], "int")
+            
+            # Check if we need floating-point operations
+            if a_type == "float" or b_type == "float":
+                # Use floating-point subtraction
+                llvm_type = "double"
+                # Convert integer operands to double if needed
+                if a_type != "float" and a.startswith('%'):
+                    a_fp = self.new_llvm_temp()
+                    self.emit(f"  {a_fp} = sitofp i32 {a} to double")
+                    a = a_fp
+                elif a_type != "float" and not a.startswith('%'):
+                    try:
+                        a = str(float(a))
+                    except ValueError:
+                        a_fp = self.new_llvm_temp()
+                        self.emit(f"  {a_fp} = sitofp i32 {a} to double")
+                        a = a_fp
+                
+                if b_type != "float" and b.startswith('%'):
+                    b_fp = self.new_llvm_temp()
+                    self.emit(f"  {b_fp} = sitofp i32 {b} to double")
+                    b = b_fp
+                elif b_type != "float" and not b.startswith('%'):
+                    try:
+                        b = str(float(b))
+                    except ValueError:
+                        b_fp = self.new_llvm_temp()
+                        self.emit(f"  {b_fp} = sitofp i32 {b} to double")
+                        b = b_fp
+                
+                llvm_temp = self.new_llvm_temp()
+                self.emit(f"  {llvm_temp} = fsub {llvm_type} {a}, {b}")
+                if result:
+                    self.temp_to_llvm[result] = llvm_temp
                     self.temp_types[result] = "float"
-                else:
+            else:
+                # Use integer subtraction
+                llvm_type = "i32"
+                llvm_temp = self.new_llvm_temp()
+                self.emit(f"  {llvm_temp} = sub {llvm_type} {a}, {b}")
+                if result:
+                    self.temp_to_llvm[result] = llvm_temp
                     self.temp_types[result] = "int"
         
         elif op == Op.MUL:
-            # Multiply: %t = mul i32 %a, %b
+            # Multiply: %t = mul i32 %a, %b or fmul double %a, %b
             a = self.get_llvm_value(operands[0])
             b = self.get_llvm_value(operands[1])
-            llvm_type = "i32"
-            llvm_temp = self.new_llvm_temp()
-            self.emit(f"  {llvm_temp} = mul {llvm_type} {a}, {b}")
-            if result:
-                self.temp_to_llvm[result] = llvm_temp
-                a_type = self.temp_types.get(operands[0], "int")
-                b_type = self.temp_types.get(operands[1], "int")
-                if a_type == "float" or b_type == "float":
+            a_type = self.temp_types.get(operands[0], "int")
+            b_type = self.temp_types.get(operands[1], "int")
+            
+            # Check if we need floating-point operations
+            if a_type == "float" or b_type == "float":
+                # Use floating-point multiplication
+                llvm_type = "double"
+                # Convert integer operands to double if needed
+                if a_type != "float" and a.startswith('%'):
+                    a_fp = self.new_llvm_temp()
+                    self.emit(f"  {a_fp} = sitofp i32 {a} to double")
+                    a = a_fp
+                elif a_type != "float" and not a.startswith('%'):
+                    try:
+                        a = str(float(a))
+                    except ValueError:
+                        a_fp = self.new_llvm_temp()
+                        self.emit(f"  {a_fp} = sitofp i32 {a} to double")
+                        a = a_fp
+                
+                if b_type != "float" and b.startswith('%'):
+                    b_fp = self.new_llvm_temp()
+                    self.emit(f"  {b_fp} = sitofp i32 {b} to double")
+                    b = b_fp
+                elif b_type != "float" and not b.startswith('%'):
+                    try:
+                        b = str(float(b))
+                    except ValueError:
+                        b_fp = self.new_llvm_temp()
+                        self.emit(f"  {b_fp} = sitofp i32 {b} to double")
+                        b = b_fp
+                
+                llvm_temp = self.new_llvm_temp()
+                self.emit(f"  {llvm_temp} = fmul {llvm_type} {a}, {b}")
+                if result:
+                    self.temp_to_llvm[result] = llvm_temp
                     self.temp_types[result] = "float"
-                else:
+            else:
+                # Use integer multiplication
+                llvm_type = "i32"
+                llvm_temp = self.new_llvm_temp()
+                self.emit(f"  {llvm_temp} = mul {llvm_type} {a}, {b}")
+                if result:
+                    self.temp_to_llvm[result] = llvm_temp
                     self.temp_types[result] = "int"
         
         elif op == Op.DIV:
-            # Divide: %t = sdiv i32 %a, %b
+            # Divide: %t = sdiv i32 %a, %b or fdiv double %a, %b
             a = self.get_llvm_value(operands[0])
             b = self.get_llvm_value(operands[1])
-            llvm_type = "i32"
-            llvm_temp = self.new_llvm_temp()
-            self.emit(f"  {llvm_temp} = sdiv {llvm_type} {a}, {b}")
-            if result:
-                self.temp_to_llvm[result] = llvm_temp
-                a_type = self.temp_types.get(operands[0], "int")
-                b_type = self.temp_types.get(operands[1], "int")
-                if a_type == "float" or b_type == "float":
+            a_type = self.temp_types.get(operands[0], "int")
+            b_type = self.temp_types.get(operands[1], "int")
+            
+            # Check if we need floating-point operations
+            if a_type == "float" or b_type == "float":
+                # Use floating-point division
+                llvm_type = "double"
+                # Convert integer operands to double if needed
+                if a_type != "float" and a.startswith('%'):
+                    a_fp = self.new_llvm_temp()
+                    self.emit(f"  {a_fp} = sitofp i32 {a} to double")
+                    a = a_fp
+                elif a_type != "float" and not a.startswith('%'):
+                    try:
+                        a = str(float(a))
+                    except ValueError:
+                        a_fp = self.new_llvm_temp()
+                        self.emit(f"  {a_fp} = sitofp i32 {a} to double")
+                        a = a_fp
+                
+                if b_type != "float" and b.startswith('%'):
+                    b_fp = self.new_llvm_temp()
+                    self.emit(f"  {b_fp} = sitofp i32 {b} to double")
+                    b = b_fp
+                elif b_type != "float" and not b.startswith('%'):
+                    try:
+                        b = str(float(b))
+                    except ValueError:
+                        b_fp = self.new_llvm_temp()
+                        self.emit(f"  {b_fp} = sitofp i32 {b} to double")
+                        b = b_fp
+                
+                llvm_temp = self.new_llvm_temp()
+                self.emit(f"  {llvm_temp} = fdiv {llvm_type} {a}, {b}")
+                if result:
+                    self.temp_to_llvm[result] = llvm_temp
                     self.temp_types[result] = "float"
-                else:
+            else:
+                # Use integer division
+                llvm_type = "i32"
+                llvm_temp = self.new_llvm_temp()
+                self.emit(f"  {llvm_temp} = sdiv {llvm_type} {a}, {b}")
+                if result:
+                    self.temp_to_llvm[result] = llvm_temp
                     self.temp_types[result] = "int"
         
         elif op == Op.MOD:
@@ -968,14 +1138,18 @@ class LLVMGenerator:
             elif arg_type == "float":
                 if arg_value.startswith('%'):
                     # Check if it's already a double or needs conversion
-                    # Check recent output to see if this value was created with fadd or load double
+                    # Check recent output to see if this value was created with floating-point operations
                     is_double = False
                     for line in reversed(self.output):
-                        if f"{arg_value} = fadd" in line or f"{arg_value} = load double" in line:
+                        if (f"{arg_value} = fadd" in line or 
+                            f"{arg_value} = fsub" in line or
+                            f"{arg_value} = fmul" in line or
+                            f"{arg_value} = fdiv" in line or
+                            f"{arg_value} = load double" in line):
                             is_double = True
                             break
                         # Stop searching if we hit a different instruction for this value
-                        if f"{arg_value} = " in line and "fadd" not in line and "load double" not in line:
+                        if f"{arg_value} = " in line and not any(op in line for op in ["fadd", "fsub", "fmul", "fdiv", "load double"]):
                             break
                     
                     if is_double:
@@ -1026,13 +1200,19 @@ class LLVMGenerator:
                     escape_map = {'n': '\n', 't': '\t', 'r': '\r', '\\': '\\', "'": "'", '"': '"'}
                     char = escape_map.get(char_str[1], char_str[1])
                     return str(ord(char))
-            # Try to parse as integer FIRST (before treating single chars as character literals)
+            # Try to parse as number FIRST (before treating single chars as character literals)
             # This fixes the bug where "1" was being treated as a character
             try:
+                # Try integer first
                 int_val = int(operand)
                 return str(int_val)
             except ValueError:
-                pass
+                # Try float
+                try:
+                    float_val = float(operand)
+                    return str(float_val)
+                except ValueError:
+                    pass
             # Check if it's a single character (character literal value from Constant node)
             # Only treat as character if it's NOT a digit
             if len(operand) == 1 and not operand.isdigit():
