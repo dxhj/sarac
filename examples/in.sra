@@ -16,7 +16,8 @@ int unreach() {
 }
 
 int main() {
-    print("Example program written in Sara");
+    print("Example program written in Sara", 1+1, 1+1);
+    print("oi", 1+1, 1+1, " ", 1.2, " ", 1.3 * 2);
     print(fib(10));
     print(bar());
     print("olá", 2, bar(), fib(10));

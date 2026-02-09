@@ -32,9 +32,22 @@ with open('examples/in.sra', 'r') as f:
         mir_generator = MIRGenerator()
         program.accept(mir_generator)
         
-        # Print MIR for each function
+        # Print MIR for each function (before optimization)
         print("\n" + "=" * 60)
-        print("Generated MIR")
+        print("Generated MIR (before optimization)")
+        print("=" * 60)
+        for mir_func in mir_generator.functions:
+            print(mir_func)
+            print()
+        
+        # Optimize MIR
+        from sarac.ir.mir_optimizer import optimize_mir
+        for mir_func in mir_generator.functions:
+            optimize_mir(mir_func)
+        
+        # Print MIR for each function (after optimization)
+        print("\n" + "=" * 60)
+        print("Optimized MIR")
         print("=" * 60)
         for mir_func in mir_generator.functions:
             print(mir_func)
