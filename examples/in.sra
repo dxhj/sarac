@@ -15,13 +15,11 @@ int unreach() {
     return 1 + fib(2);
 }
 
-int main(int y, int parameters) {
-    int x;
-    string str;
-    char c = 'a';
-    x = 1 + str;
-    x = 3;
+int main() {
+    print("Example program written in Sara");
     print(fib(10));
     print(bar());
+    print("olá", 2, bar(), fib(10));
+    print(fib(5), bar(), 2, "olá");
     return 0;
 }

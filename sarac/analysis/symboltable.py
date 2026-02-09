@@ -71,17 +71,15 @@ class BuildSymbolTableVisitor(object):
     def _register_builtins(self):
         """Register built-in functions in the global symbol table."""
         # Register print function
-        # print can accept one argument of any type (int, char, float, string)
-        # We'll use a generic parameter type that accepts any type
+        # print can accept zero or more arguments of any type (int, char, float, string)
+        # We'll use an empty parameter list to allow variadic arguments
         print_identifier = Identifier("print")
         print_attrs = FunctionAttributes()
         print_attrs.name = "print"
         print_attrs.type = voidTypeDescriptor
-        # Create a parameter list with a single parameter of generic type
-        # We'll use int as a placeholder, but the actual type checking will be done in LLVM generation
-        param_identifier = Identifier("value", integerTypeDescriptor)
-        param_decl = ASTDeclaration(integerTypeDescriptor, param_identifier)
-        param_list = ParameterList([param_decl])
+        # Create an empty parameter list to allow variadic arguments
+        # The actual type checking will be done in LLVM generation
+        param_list = ParameterList([])
         print_attrs.parameters = param_list
         self.symbol_table.put(print_identifier, print_attrs)
 

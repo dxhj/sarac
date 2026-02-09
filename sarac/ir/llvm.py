@@ -21,10 +21,11 @@ class LLVMGenerator:
         self.pending_param_types = []  # Types of parameters collected before a CALL
         self.alloca_instructions = []  # Alloca instructions to emit at function start
         self.i1_temporaries = set()  # Track which temporaries are i1 (from comparisons)
-        self.string_literals = {}  # Map string values to global constant names
+        self.string_literals = {}  # Map string values to (global_name, byte_length) tuples
         self.string_counter = 0  # Counter for string literal names
         self.print_format_strings = {}  # Map format strings to global constant names for print
         self.temp_types = {}  # Map MIR temps to their types (for print)
+        self.mir_functions = {}  # Map function names to MIRFunction objects for parameter lookup
     
     def type_to_llvm(self, sarac_type):
         """Convert Sarac type to LLVM type."""
@@ -80,15 +81,16 @@ class LLVMGenerator:
                                 # Not a number, it's a string literal
                                 if value not in self.string_literals:
                                     global_name = f"@.str{self.string_counter}"
-                                    self.string_literals[value] = global_name
+                                    byte_length = len(value.encode('utf-8'))
+                                    self.string_literals[value] = (global_name, byte_length)
                                     self.string_counter += 1
         
         # Emit string literal global constants
-        for string_value, global_name in self.string_literals.items():
+        for string_value, (global_name, byte_length) in self.string_literals.items():
             # Escape the string for LLVM IR
             escaped = string_value.replace('\\', '\\5C').replace('\n', '\\0A').replace('\t', '\\09').replace('\r', '\\0D').replace('"', '\\22').replace('\0', '\\00')
             # Create null-terminated string
-            self.emit(f"{global_name} = private unnamed_addr constant [{len(string_value) + 1} x i8] c\"{escaped}\\00\"")
+            self.emit(f"{global_name} = private unnamed_addr constant [{byte_length + 1} x i8] c\"{escaped}\\00\"")
         
         if self.string_literals:
             self.emit("")  # Blank line after string literals
@@ -122,6 +124,10 @@ class LLVMGenerator:
             # For now, we'll skip declarations since we don't have enough info
             # In a real compiler, you'd look up function signatures from a symbol table
             pass
+        
+        # Build function lookup map
+        for func in mir_functions:
+            self.mir_functions[func.name] = func
         
         # Generate function definitions
         for func in mir_functions:
@@ -305,10 +311,10 @@ class LLVMGenerator:
             if result:
                 if is_string:
                     # It's a string literal
-                    global_name = self.string_literals[value]
+                    global_name, byte_length = self.string_literals[value]
                     llvm_temp = self.new_llvm_temp()
                     # Get pointer to string: getelementptr to get i8* from [N x i8]*
-                    self.emit(f"  {llvm_temp} = getelementptr inbounds [{len(value) + 1} x i8], [{len(value) + 1} x i8]* {global_name}, i32 0, i32 0")
+                    self.emit(f"  {llvm_temp} = getelementptr inbounds [{byte_length + 1} x i8], [{byte_length + 1} x i8]* {global_name}, i32 0, i32 0")
                     self.temp_to_llvm[result] = llvm_temp
                     self.temp_types[result] = "string"  # Track type
                 else:
@@ -670,15 +676,42 @@ class LLVMGenerator:
                 # print returns void, so no result temp needed
                 return
             
-            return_type = "i32"  # TODO: get actual return type from function signature
+            # Determine how many parameters this function expects
+            expected_param_count = 0
+            if func_name in self.mir_functions:
+                expected_param_count = len(self.mir_functions[func_name].parameters)
             
-            # Use collected parameters
-            params = self.pending_params
-            self.pending_params = []  # Reset for next call
+            # Only consume the parameters that belong to this call
+            # Parameters are collected in order, so we take the last N parameters
+            if expected_param_count > 0:
+                params = self.pending_params[-expected_param_count:]
+                param_types = self.pending_param_types[-expected_param_count:] if len(self.pending_param_types) >= expected_param_count else []
+                # Remove consumed parameters
+                self.pending_params = self.pending_params[:-expected_param_count]
+                self.pending_param_types = self.pending_param_types[:-expected_param_count] if len(self.pending_param_types) >= expected_param_count else []
+            else:
+                # Function takes no parameters, don't consume any
+                params = []
+                param_types = []
             
-            # Build parameter list
+            # Get actual return type from function signature
+            if func_name in self.mir_functions:
+                func_return_type = self.mir_functions[func_name].return_type
+                return_type = self.type_to_llvm(func_return_type)
+            else:
+                return_type = "i32"  # Default
+            
+            # Build parameter list with correct types
             if params:
-                param_str = ", ".join([f"i32 {p}" for p in params])
+                # Get parameter types from function signature
+                param_type_strs = []
+                if func_name in self.mir_functions and self.mir_functions[func_name].parameter_types:
+                    param_type_strs = [self.type_to_llvm(pt) for pt in self.mir_functions[func_name].parameter_types]
+                else:
+                    # Default to i32 for all params
+                    param_type_strs = ["i32"] * len(params)
+                
+                param_str = ", ".join([f"{pt} {p}" for pt, p in zip(param_type_strs, params)])
             else:
                 param_str = ""
             
@@ -686,6 +719,23 @@ class LLVMGenerator:
             self.emit(f"  {llvm_temp} = call {return_type} @{func_name}({param_str})")
             if result:
                 self.temp_to_llvm[result] = llvm_temp
+                # Track the return type of the function call
+                if func_name in self.mir_functions:
+                    func_return_type = self.mir_functions[func_name].return_type
+                    if func_return_type:
+                        type_str = str(func_return_type).lower()
+                        if type_str == "char":
+                            self.temp_types[result] = "char"
+                        elif type_str == "string":
+                            self.temp_types[result] = "string"
+                        elif type_str == "float":
+                            self.temp_types[result] = "float"
+                        else:
+                            self.temp_types[result] = "int"
+                    else:
+                        self.temp_types[result] = "int"
+                else:
+                    self.temp_types[result] = "int"  # Default
     
     def _get_operand_type(self, operand):
         """Try to determine the type of an operand (temp name or constant)."""
@@ -763,6 +813,17 @@ class LLVMGenerator:
         
         return format_global, format_len
     
+    def _get_format_specifier(self, arg_type):
+        """Get the format specifier character for a given type."""
+        if arg_type == "string":
+            return "%s"
+        elif arg_type == "char":
+            return "%c"
+        elif arg_type == "float":
+            return "%f"
+        else:  # int (default)
+            return "%d"
+    
     def _handle_print_call(self):
         """Handle a call to the print built-in function."""
         # Use collected parameters
@@ -799,61 +860,89 @@ class LLVMGenerator:
             self.emit(f"  {printf_result} = call i32 (i8*, ...) @printf(i8* noundef {format_ptr})")
             return
         
-        # Get the first (and only) argument
-        arg = params[0]
-        arg_type = param_types[0] if param_types else "int"
+        # Build combined format string from all argument types
+        format_specs = []
+        for i, arg_type in enumerate(param_types if param_types else ["int"] * len(params)):
+            format_specs.append(self._get_format_specifier(arg_type))
+        
+        # Combine format specifiers and add newline
+        format_str_parts = "".join(format_specs) + "\\0A\\00"  # Add newline and null terminator
+        # Calculate length: each format specifier is 2 chars (%s, %d, %c, %f), plus \n (1 char) and \0 (1 char)
+        format_len = len(format_specs) * 2 + 2  # 2 chars per specifier + \n + \0
+        
+        # Escape the format string for LLVM IR
+        format_str = format_str_parts
         
         # Get or create format string
-        format_global, format_len = self._get_or_create_format_string(arg_type)
-        
-        # Determine LLVM type for argument
-        if arg_type == "string":
-            llvm_type = "i8*"
-        elif arg_type == "char":
-            llvm_type = "i32"  # Characters are passed as i32 to printf
-        elif arg_type == "float":
-            llvm_type = "double"  # printf expects double for %f
-        else:  # int (default)
-            llvm_type = "i32"
+        format_key = (format_str, format_len)
+        if format_key not in self.print_format_strings:
+            format_global = f"@.str.print{self.string_counter}"
+            self.string_counter += 1
+            self.print_format_strings[format_key] = (format_global, format_len, format_str)
+            # Emit at global scope - insert before current function definition
+            func_def_line = None
+            for i, line in enumerate(self.output):
+                if line.startswith(f"define ") and f"@{self.current_function.name}(" in line:
+                    func_def_line = i
+                    break
+            if func_def_line is not None:
+                self.output.insert(func_def_line, f"{format_global} = private unnamed_addr constant [{format_len} x i8] c\"{format_str}\"")
+            else:
+                self.emit(f"{format_global} = private unnamed_addr constant [{format_len} x i8] c\"{format_str}\"")
+        else:
+            format_global, format_len, _ = self.print_format_strings[format_key]
         
         # Get pointer to format string
         format_ptr = self.new_llvm_temp()
         self.emit(f"  {format_ptr} = getelementptr inbounds [{format_len} x i8], [{format_len} x i8]* {format_global}, i32 0, i32 0")
         
-        # Prepare argument value
-        arg_value = arg
-        if arg_type == "char" and not arg_value.startswith('%'):
-            # Character constant - convert to integer
-            if len(arg_value) >= 3 and arg_value[0] == "'" and arg_value[-1] == "'":
-                char_str = arg_value[1:-1]
-                if len(char_str) == 1:
-                    arg_value = str(ord(char_str))
-                elif len(char_str) == 2 and char_str[0] == '\\':
-                    escape_map = {'n': '\n', 't': '\t', 'r': '\r', '\\': '\\', "'": "'", '"': '"'}
-                    char = escape_map.get(char_str[1], char_str[1])
-                    arg_value = str(ord(char))
-            elif len(arg_value) == 1:
-                arg_value = str(ord(arg_value))
+        # Prepare all arguments with correct types
+        printf_args = []
+        for i, arg in enumerate(params):
+            arg_type = param_types[i] if i < len(param_types) else "int"
+            arg_value = arg
+            
+            # Prepare character arguments
+            if arg_type == "char":
+                if not arg_value.startswith('%'):
+                    # Character constant - convert to integer
+                    if len(arg_value) >= 3 and arg_value[0] == "'" and arg_value[-1] == "'":
+                        char_str = arg_value[1:-1]
+                        if len(char_str) == 1:
+                            arg_value = str(ord(char_str))
+                        elif len(char_str) == 2 and char_str[0] == '\\':
+                            escape_map = {'n': '\n', 't': '\t', 'r': '\r', '\\': '\\', "'": "'", '"': '"'}
+                            char = escape_map.get(char_str[1], char_str[1])
+                            arg_value = str(ord(char))
+                    elif len(arg_value) == 1:
+                        arg_value = str(ord(arg_value))
+                else:
+                    # Temporary holding char (i8) - zero-extend to i32 for printf
+                    zext_temp = self.new_llvm_temp()
+                    self.emit(f"  {zext_temp} = zext i8 {arg_value} to i32")
+                    arg_value = zext_temp
+            
+            # Determine LLVM type and format for printf call
+            if arg_type == "string":
+                printf_args.append(f"i8* noundef {arg_value}")
+            elif arg_type == "float":
+                if arg_value.startswith('%'):
+                    # Convert i32 temp to double
+                    fpext_temp = self.new_llvm_temp()
+                    self.emit(f"  {fpext_temp} = sitofp i32 {arg_value} to double")
+                    printf_args.append(f"double noundef {fpext_temp}")
+                else:
+                    printf_args.append(f"double noundef {arg_value}")
+            else:  # int or char (both passed as i32)
+                printf_args.append(f"i32 noundef {arg_value}")
         
-        # Call printf with appropriate type
-        # Use variadic call syntax matching clang's format
+        # Call printf with all arguments
         printf_result = self.new_llvm_temp()
-        if arg_type == "string":
-            # For strings, pass i8* directly
-            self.emit(f"  {printf_result} = call i32 (i8*, ...) @printf(i8* noundef {format_ptr}, i8* noundef {arg_value})")
-        elif arg_type == "float":
-            # For float, convert to double if needed
-            if arg_value.startswith('%'):
-                # Convert i32 temp to double
-                fpext_temp = self.new_llvm_temp()
-                self.emit(f"  {fpext_temp} = sitofp i32 {arg_value} to double")
-                self.emit(f"  {printf_result} = call i32 (i8*, ...) @printf(i8* noundef {format_ptr}, double noundef {fpext_temp})")
-            else:
-                # Constant - treat as double
-                self.emit(f"  {printf_result} = call i32 (i8*, ...) @printf(i8* noundef {format_ptr}, double noundef {arg_value})")
+        if printf_args:
+            args_str = ", ".join(printf_args)
+            self.emit(f"  {printf_result} = call i32 (i8*, ...) @printf(i8* noundef {format_ptr}, {args_str})")
         else:
-            # For int and char (both passed as i32)
-            self.emit(f"  {printf_result} = call i32 (i8*, ...) @printf(i8* noundef {format_ptr}, i32 noundef {arg_value})")
+            self.emit(f"  {printf_result} = call i32 (i8*, ...) @printf(i8* noundef {format_ptr})")
     
     def get_llvm_value(self, operand):
         """Get LLVM representation of an operand (temp, constant, or variable)."""
