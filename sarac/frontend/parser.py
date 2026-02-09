@@ -274,8 +274,32 @@ class Parser(object):
     def p_error(self, p):
         self.error_count += 1
         if p is not None:
-            Error.syntax_error("unexpected token '%s'" % p.value[0],
-                               p.value[1], p.value[2])
+            token_value = p.value[0] if isinstance(p.value, tuple) else str(p.value)
+            line = p.value[1] if isinstance(p.value, tuple) else p.lineno
+            column = p.value[2] if isinstance(p.value, tuple) and len(p.value) > 2 else 0
+            
+            # Common suggestions based on token
+            suggestions = {
+                '}': "did you forget a semicolon ';' before this?",
+                ';': "unexpected semicolon, did you mean to use a comma ','?",
+                ')': "did you forget an opening parenthesis '('?",
+                ']': "did you forget an opening bracket '['?",
+            }
+            suggestion = suggestions.get(token_value, None)
+            
+            # Expected tokens based on context
+            expected = "';' or expression"
+            if token_value == '}':
+                expected = "';' or expression"
+            elif token_value == ';':
+                expected = "expression or statement"
+            
+            Error.syntax_error(
+                "unexpected token '%s'" % token_value,
+                line, column,
+                expected=expected,
+                suggestion=suggestion
+            )
 
             # Skip tokens until we find a synchronization point
             recovery_tokens = {"SEMICOLON", "LBRACE"}
@@ -287,4 +311,4 @@ class Parser(object):
             self.parser.errok()
             return token
         else:
-            Error.syntax_error("unexpected end-of-file")
+            Error.syntax_error("unexpected end-of-file", expected="more code")

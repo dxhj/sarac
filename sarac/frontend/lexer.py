@@ -213,7 +213,23 @@ class Lexer(object):
         t.lexer.lineno += len(t.value)
 
     def t_error(self, t):
-        Error.lexical_error("unknown char '%c'" % t.value[0], t.lexer.lineno, self.token_column(t))
+        char = t.value[0] if t.value else '?'
+        line = t.lexer.lineno
+        column = self.token_column(t)
+        
+        # Suggestions for common mistakes
+        suggestions = {
+            '@': "did you mean to use a different character? '@' is not valid",
+            '$': "did you mean to use a different character? '$' is not valid",
+            '`': "did you mean to use a single quote ''' or double quote '\"'?",
+        }
+        suggestion = suggestions.get(char, "check for invalid character or encoding issue")
+        
+        Error.lexical_error(
+            "unknown character '%c'" % char, 
+            line, column,
+            suggestion=suggestion
+        )
         if len(t.value) > 1:
             print("\t\t", u'\u2304')
             print("\t>> \t", t.value[0:5].strip())

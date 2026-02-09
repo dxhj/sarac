@@ -22,7 +22,10 @@ from sarac.optimization.optimizer import OptimizerVisitor
 from sarac.analysis.semantic import SemanticsVisitor
 from sarac.frontend.printer import PrintASTVisitor
 from sarac.ir.codegen import CodeGenerator
-from sarac.utils.error import SaraErrorException
+from sarac.utils.error import (
+    SaraErrorException, ErrorCollector, set_error_collector, 
+    get_error_collector
+)
 
 # Default input file
 DEFAULT_INPUT_FILE = 'examples/in.sra'
@@ -84,6 +87,23 @@ Examples:
         help='Optimization level: 0 (none), 1 (default), 2, 3, s (size), z (size aggressive)'
     )
     
+    parser.add_argument(
+        '-W',
+        dest='warnings',
+        action='append',
+        default=[],
+        choices=['all', 'error', 'none', 'unused', 'unreachable', 'conversion'],
+        help='Warning flags: all (enable all), error (treat warnings as errors), '
+             'none (suppress all), unused, unreachable, conversion'
+    )
+    
+    parser.add_argument(
+        '--max-errors',
+        type=int,
+        default=50,
+        help='Maximum number of errors to report before stopping (default: 50)'
+    )
+    
     args = parser.parse_args()
     
     # Check for optimization flags in sys.argv (handle -O0, -O1, etc.)
@@ -92,6 +112,22 @@ Examples:
         if opt in sys.argv:
             args.optimization_level = opt[1:]  # Remove the '-'
             break
+    
+    # Process warning flags
+    warnings_as_errors = 'error' in args.warnings
+    suppress_warnings = 'none' in args.warnings
+    enable_all_warnings = 'all' in args.warnings
+    
+    # Initialize error collector
+    collector = ErrorCollector(
+        max_errors=args.max_errors,
+        warnings_as_errors=warnings_as_errors,
+        suppress_warnings=suppress_warnings
+    )
+    collector._collect_mode = True  # Enable collection mode
+    collector._enable_all_warnings = enable_all_warnings
+    collector._warning_flags = set(args.warnings)  # Store warning flags for filtering
+    set_error_collector(collector)
     
     return args
 
@@ -106,11 +142,17 @@ def get_output_name(input_file):
 
 def compile_phase_parser(input_file, debug=False):
     """Phase 1: Lexing and Parsing."""
+    collector = get_error_collector()
+    
     with open(input_file, 'r') as f:
-        parser = Parser(debug=debug)
-        program = parser.parse(f.read())
+        source_code = f.read()
+        collector.set_source(source_code)
         
-        if parser.error_count > 0:
+        parser = Parser(debug=debug)
+        program = parser.parse(source_code)
+        
+        if parser.error_count > 0 or collector.has_errors():
+            collector.print_all()
             sys.exit(1)
         
         return program
@@ -118,6 +160,8 @@ def compile_phase_parser(input_file, debug=False):
 
 def compile_phase_analysis(program, debug=False):
     """Phase 2: Symbol Table Building and Semantic Analysis."""
+    collector = get_error_collector()
+    
     # Symbol table building
     table = BuildSymbolTableVisitor()
     program.accept(table)
@@ -130,6 +174,11 @@ def compile_phase_analysis(program, debug=False):
     if debug:
         printer = PrintASTVisitor()
         program.accept_children(printer)
+    
+    # Check for errors after analysis
+    if collector.has_errors():
+        collector.print_all()
+        sys.exit(1)
     
     return program
 
@@ -255,6 +304,17 @@ def main():
         # Phase 5: MIR Optimization
         mir_generator = compile_phase_mir_optimization(mir_generator, debug=args.debug)
         
+        # Check for errors/warnings before final output
+        collector = get_error_collector()
+        if collector.has_errors():
+            collector.print_all()
+            print(f"\n{collector.get_summary()}", file=sys.stderr)
+            sys.exit(1)
+        
+        # Print warnings if any
+        if collector.has_warnings():
+            collector.print_all()
+        
         # Determine output name
         output_name = get_output_name(args.input_file)
         
@@ -276,6 +336,9 @@ def main():
     
     except SaraErrorException:
         # Error already printed by error handler
+        collector = get_error_collector()
+        if collector.has_errors():
+            print(f"\n{collector.get_summary()}", file=sys.stderr)
         sys.exit(1)
     except FileNotFoundError as e:
         print(f"Error: File not found: {e}", file=sys.stderr)
