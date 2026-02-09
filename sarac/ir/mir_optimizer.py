@@ -210,8 +210,9 @@ class MIROptimizer:
         """
         changed = False
         
-        # Track constant values for temporaries
+        # Track constant values and types for temporaries
         constants = {}  # temp -> constant value
+        constant_types = {}  # temp -> type string
         
         for block in mir_func.blocks:
             new_instructions = []
@@ -226,6 +227,18 @@ class MIROptimizer:
                 if instr.op == Op.CONST:
                     if instr.result and len(instr.operands) > 0:
                         constants[instr.result] = instr.operands[0]
+                        # Track type information
+                        if hasattr(instr, 'operand_types') and instr.operand_types and len(instr.operand_types) > 0:
+                            constant_types[instr.result] = str(instr.operand_types[0]).lower()
+                        else:
+                            # Infer type from value
+                            value = instr.operands[0]
+                            if isinstance(value, float):
+                                constant_types[instr.result] = "float"
+                            elif isinstance(value, str) and (len(value) >= 3 and value[0] == "'" and value[-1] == "'" or len(value) == 1):
+                                constant_types[instr.result] = "char"
+                            else:
+                                constant_types[instr.result] = "int"
                     new_instructions.append(instr)
                     continue
                 
@@ -277,12 +290,19 @@ class MIROptimizer:
                                         continue
                                     result = left_val % right_val
                                 
+                                # Determine result type: if either operand is float, result is float
+                                left_type = constant_types.get(left, "int")
+                                right_type = constant_types.get(right, "int")
+                                result_type = "float" if (left_type == "float" or right_type == "float" or isinstance(left_val, float) or isinstance(right_val, float)) else "int"
+                                
                                 # Replace with constant load
                                 const_instr = Instruction(Op.CONST, result)
                                 const_instr.result = instr.result
+                                const_instr.operand_types = [result_type]
                                 new_instructions.append(const_instr)
                                 if instr.result:
                                     constants[instr.result] = result
+                                    constant_types[instr.result] = result_type
                                 changed = True
                                 continue
                             except (ZeroDivisionError, TypeError):
@@ -309,11 +329,19 @@ class MIROptimizer:
                                 elif instr.op == Op.NOT:
                                     result = 0 if operand_val else 1
                                 
+                                # Determine result type from operand type
+                                operand_type = constant_types.get(operand, "int")
+                                result_type = operand_type  # Unary ops preserve type (except NOT which is always int)
+                                if instr.op == Op.NOT:
+                                    result_type = "int"
+                                
                                 const_instr = Instruction(Op.CONST, result)
                                 const_instr.result = instr.result
+                                const_instr.operand_types = [result_type]
                                 new_instructions.append(const_instr)
                                 if instr.result:
                                     constants[instr.result] = result
+                                    constant_types[instr.result] = result_type
                                 changed = True
                                 continue
                             except (TypeError, ValueError):
@@ -355,11 +383,14 @@ class MIROptimizer:
                                 elif instr.op == Op.GE:
                                     result = 1 if left_val >= right_val else 0
                                 
+                                # Comparisons always return int (boolean)
                                 const_instr = Instruction(Op.CONST, result)
                                 const_instr.result = instr.result
+                                const_instr.operand_types = ["int"]
                                 new_instructions.append(const_instr)
                                 if instr.result:
                                     constants[instr.result] = result
+                                    constant_types[instr.result] = "int"
                                 changed = True
                                 continue
                             except (TypeError, ValueError):

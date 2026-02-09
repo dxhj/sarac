@@ -16,8 +16,9 @@ int unreach() {
 }
 
 int main() {
+    float test_float = 10;
     print("Example program written in Sara", 1+1, 1+1);
-    print("oi", 1+1, 1+1, " ", 1.2, " ", 1.3 * 2);
+    print("oi", test_float, 1+1, 1+1, " ", 1.2, " ", 1.3 * 2, 10 / 2, 1.3 + 1);
     print(fib(10));
     print(bar());
     print("olá", 2, bar(), fib(10));

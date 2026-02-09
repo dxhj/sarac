@@ -38,6 +38,8 @@ class LLVMGenerator:
             return "i8"
         elif type_str == "string":
             return "i8*"
+        elif type_str == "float":
+            return "double"
         elif type_str == "void":
             return "void"
         else:
@@ -320,20 +322,30 @@ class LLVMGenerator:
                 else:
                     # Number or character
                     llvm_value = self.get_llvm_value(value)
-                    llvm_type = "i32"  # TODO: determine type from context (could be i8 for char)
-                    llvm_temp = self.new_llvm_temp()
-                    self.emit(f"  {llvm_temp} = add {llvm_type} 0, {llvm_value}")
-                    self.temp_to_llvm[result] = llvm_temp
-                    # Track type from operand_types if available
+                    # Determine type from operand_types if available
                     if hasattr(instr, 'operand_types') and instr.operand_types and len(instr.operand_types) > 0:
                         type_str = str(instr.operand_types[0]).lower()
+                        llvm_type = self.type_to_llvm(type_str)
                         self.temp_types[result] = type_str
                     else:
                         # Infer from value
-                        if isinstance(value, str) and (len(value) >= 3 and value[0] == "'" and value[-1] == "'" or len(value) == 1):
+                        if isinstance(value, float):
+                            llvm_type = "double"
+                            self.temp_types[result] = "float"
+                        elif isinstance(value, str) and (len(value) >= 3 and value[0] == "'" and value[-1] == "'" or len(value) == 1):
+                            llvm_type = "i8"
                             self.temp_types[result] = "char"
                         else:
+                            llvm_type = "i32"
                             self.temp_types[result] = "int"
+                    
+                    llvm_temp = self.new_llvm_temp()
+                    if llvm_type == "double":
+                        # For floating point, use fadd or just the constant directly
+                        self.emit(f"  {llvm_temp} = fadd {llvm_type} 0.0, {llvm_value}")
+                    else:
+                        self.emit(f"  {llvm_temp} = add {llvm_type} 0, {llvm_value}")
+                    self.temp_to_llvm[result] = llvm_temp
         
         elif op == Op.LOAD:
             # Load variable: %t = load i32, i32* %var
@@ -370,24 +382,46 @@ class LLVMGenerator:
                 self.var_to_llvm[var_name] = llvm_var
             llvm_value = self.get_llvm_value(value_temp)
             
+            # Get the type of the value being stored
+            value_type = self.temp_types.get(value_temp, "int")
+            value_llvm_type = self.type_to_llvm(value_type)
+            
             # Handle type conversion if needed
-            # If storing to char (i8) but value is i32, truncate
-            if llvm_type == "i8" and not llvm_value.startswith('%'):
-                # Constant - can use directly if it fits
-                try:
-                    val = int(llvm_value)
-                    if 0 <= val <= 255:
-                        llvm_value = str(val)
+            if llvm_type == "i8":
+                # Storing to char (i8)
+                if not llvm_value.startswith('%'):
+                    # Constant - can use directly if it fits
+                    try:
+                        val = int(llvm_value)
+                        if 0 <= val <= 255:
+                            llvm_value = str(val)
+                        else:
+                            # Truncate constant
+                            llvm_value = str(val & 0xFF)
+                    except ValueError:
+                        pass
+                elif value_llvm_type == "i32":
+                    # Temporary - need to truncate from i32 to i8
+                    trunc_temp = self.new_llvm_temp()
+                    self.emit(f"  {trunc_temp} = trunc i32 {llvm_value} to i8")
+                    llvm_value = trunc_temp
+            elif llvm_type == "double":
+                # Storing to float (double)
+                if value_llvm_type == "i32":
+                    # Need to convert from i32 to double
+                    if llvm_value.startswith('%'):
+                        # Temporary - convert using sitofp
+                        fpext_temp = self.new_llvm_temp()
+                        self.emit(f"  {fpext_temp} = sitofp i32 {llvm_value} to double")
+                        llvm_value = fpext_temp
                     else:
-                        # Truncate constant
-                        llvm_value = str(val & 0xFF)
-                except ValueError:
-                    pass
-            elif llvm_type == "i8" and llvm_value.startswith('%'):
-                # Temporary - need to truncate from i32 to i8
-                trunc_temp = self.new_llvm_temp()
-                self.emit(f"  {trunc_temp} = trunc i32 {llvm_value} to i8")
-                llvm_value = trunc_temp
+                        # Constant - can convert directly
+                        try:
+                            int_val = int(llvm_value)
+                            llvm_value = str(float(int_val))
+                        except ValueError:
+                            pass
+                # If value is already double, use it directly
             
             self.emit(f"  store {llvm_type} {llvm_value}, {llvm_type}* {llvm_var}")
         
@@ -641,10 +675,15 @@ class LLVMGenerator:
             # If the return type is i8 and the value is i32 (temporary or constant), truncate it
             if return_type == "i8":
                 if value.startswith('%'):
-                    # It's a temporary - assume it's i32 and truncate to i8
-                    trunc_temp = self.new_llvm_temp()
-                    self.emit(f"  {trunc_temp} = trunc i32 {value} to i8")
-                    value = trunc_temp
+                    # It's a temporary - check its type
+                    value_type = self.temp_types.get(operands[0], "int")
+                    value_llvm_type = self.type_to_llvm(value_type)
+                    if value_llvm_type == "i32":
+                        # Need to truncate from i32 to i8
+                        trunc_temp = self.new_llvm_temp()
+                        self.emit(f"  {trunc_temp} = trunc i32 {value} to i8")
+                        value = trunc_temp
+                    # If it's already i8, use it directly
                 else:
                     # It's a constant - create i8 constant directly
                     # Constants can be used directly, but to be safe, create a trunc
@@ -900,7 +939,8 @@ class LLVMGenerator:
         printf_args = []
         for i, arg in enumerate(params):
             arg_type = param_types[i] if i < len(param_types) else "int"
-            arg_value = arg
+            # Convert MIR temporary to LLVM value
+            arg_value = self.get_llvm_value(arg)
             
             # Prepare character arguments
             if arg_type == "char":
@@ -927,12 +967,35 @@ class LLVMGenerator:
                 printf_args.append(f"i8* noundef {arg_value}")
             elif arg_type == "float":
                 if arg_value.startswith('%'):
-                    # Convert i32 temp to double
-                    fpext_temp = self.new_llvm_temp()
-                    self.emit(f"  {fpext_temp} = sitofp i32 {arg_value} to double")
-                    printf_args.append(f"double noundef {fpext_temp}")
+                    # Check if it's already a double or needs conversion
+                    # Check recent output to see if this value was created with fadd or load double
+                    is_double = False
+                    for line in reversed(self.output):
+                        if f"{arg_value} = fadd" in line or f"{arg_value} = load double" in line:
+                            is_double = True
+                            break
+                        # Stop searching if we hit a different instruction for this value
+                        if f"{arg_value} = " in line and "fadd" not in line and "load double" not in line:
+                            break
+                    
+                    if is_double:
+                        # Already a double (created with fadd or load double), use directly
+                        printf_args.append(f"double noundef {arg_value}")
+                    else:
+                        # Convert i32 temp to double
+                        fpext_temp = self.new_llvm_temp()
+                        self.emit(f"  {fpext_temp} = sitofp i32 {arg_value} to double")
+                        printf_args.append(f"double noundef {fpext_temp}")
                 else:
-                    printf_args.append(f"double noundef {arg_value}")
+                    # Constant - check if it's a float constant
+                    try:
+                        float_val = float(arg_value)
+                        printf_args.append(f"double noundef {arg_value}")
+                    except ValueError:
+                        # Not a float constant, convert from int
+                        fpext_temp = self.new_llvm_temp()
+                        self.emit(f"  {fpext_temp} = sitofp i32 {arg_value} to double")
+                        printf_args.append(f"double noundef {fpext_temp}")
             else:  # int or char (both passed as i32)
                 printf_args.append(f"i32 noundef {arg_value}")
         
