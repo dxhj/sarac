@@ -72,7 +72,22 @@ with open('examples/in.sra', 'r') as f:
         # Check if user wants to save .ll file (via command line argument)
         save_llvm_ir = '--ll' in sys.argv
         
-        codegen = CodeGenerator(save_llvm_ir=save_llvm_ir)
+        # Get optimization level from command line (default: '1')
+        optimization_level = '1'
+        if '-O0' in sys.argv:
+            optimization_level = '0'
+        elif '-O1' in sys.argv:
+            optimization_level = '1'
+        elif '-O2' in sys.argv:
+            optimization_level = '2'
+        elif '-O3' in sys.argv:
+            optimization_level = '3'
+        elif '-Os' in sys.argv:
+            optimization_level = 's'
+        elif '-Oz' in sys.argv:
+            optimization_level = 'z'
+        
+        codegen = CodeGenerator(save_llvm_ir=save_llvm_ir, optimization_level=optimization_level)
         executable_path = codegen.compile(llvm_ir, output_name)
         
         if executable_path:
