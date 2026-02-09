@@ -10,17 +10,30 @@ from sarac.frontend.printer import PrintASTVisitor
 from sarac.ir.codegen import CodeGenerator
 
 
-with open('examples/in.sra', 'r') as f:
-    parser = Parser()
-    program = parser.parse(f.read())
+from sarac.utils.error import SaraErrorException
 
-    if parser.error_count == 0:
+try:
+    # Get input file from command line or use default
+    input_file = 'examples/in.sra'
+    if len(sys.argv) > 1 and not sys.argv[1].startswith('-'):
+        input_file = sys.argv[1]
+    
+    with open(input_file, 'r') as f:
+        parser = Parser()
+        program = parser.parse(f.read())
+
+        # Stop if parsing errors occurred
+        if parser.error_count > 0:
+            sys.exit(1)
+
         printer = PrintASTVisitor()
         program.accept_children(printer)
 
+        # Symbol table building - will raise SaraErrorException on first error
         table = BuildSymbolTableVisitor()
         program.accept(table)
 
+        # Semantic analysis - will raise SaraErrorException on first error
         semantics = SemanticsVisitor()
         program.accept_children(semantics)
 
@@ -64,7 +77,6 @@ with open('examples/in.sra', 'r') as f:
         print(llvm_ir)
         
         # Determine output name from input file
-        input_file = 'examples/in.sra'
         output_name = os.path.splitext(os.path.basename(input_file))[0]
         if not output_name:
             output_name = "a.out"
@@ -95,5 +107,18 @@ with open('examples/in.sra', 'r') as f:
         elif not save_llvm_ir:
             print("\n✗ Could not create executable.")
             print("Use --ll flag to save LLVM IR to a file.")
+            sys.exit(1)
         
         codegen.cleanup()
+
+except SaraErrorException:
+    # Error already printed by error handler
+    sys.exit(1)
+except FileNotFoundError as e:
+    print(f"Error: File not found: {e}", file=sys.stderr)
+    sys.exit(1)
+except Exception as e:
+    print(f"Error: Unexpected error: {e}", file=sys.stderr)
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)

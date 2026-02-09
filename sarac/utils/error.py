@@ -3,18 +3,15 @@ import sys
 
 def error(func):
     def error_wrapper(cls, msg, line=None, column=None):
-        if Error.errors == 5:
-            try:
-                raise SaraErrorException()
-            except SaraErrorException as e:
-                if line is None:
-                    print(func(cls, msg))
-                else:
-                    print(func(cls, msg, line, column))
-                sys.exit(e)
+        # Stop on first error
+        Error.errors += 1
+        if line is None:
+            error_msg = func(cls, msg)
         else:
-            Error.errors += 1
-            print(func(cls, msg, line, column))
+            error_msg = func(cls, msg, line, column)
+        print(error_msg)
+        # Exit immediately on first error
+        raise SaraErrorException(error_msg)
     return error_wrapper
 
 
@@ -23,7 +20,7 @@ class SaraErrorException(Exception):
 
 
 class Error(object):
-    errors = 1
+    errors = 0
 
     @classmethod
     @error

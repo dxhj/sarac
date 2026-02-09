@@ -44,8 +44,12 @@ class BuildSymbolTableVisitor(object):
 
         elif isinstance(node, Assignment):
             attributes = self.symbol_table.lookup(node.children[0].name)
+            if attributes is None:
+                Error.name_error("undeclared symbol \"%s\"" % node.children[0].name, 
+                               node.children[0].coord.line if node.children[0].coord else 0, 
+                               node.children[0].coord.column if node.children[0].coord else 0)
             node.children[0].attributes = attributes
-            node.children[0].type = attributes.type
+            node.children[0].type = attributes.type if attributes else None
 
         elif isinstance(node, Reference):
             attributes = self.symbol_table.lookup(node.name)
