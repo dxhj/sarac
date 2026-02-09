@@ -3,7 +3,7 @@ char bar() {
 }
 
 int fib(int n) {
-    if (n >= 1) {
+    if (n <= 1) {
         return n;
     } else {
         return fib(n-1) + fib(n-2);
@@ -22,5 +22,6 @@ int main(int y, int parameters) {
     x = 1 + str;
     x = 3;
     print(fib(10));
+    print(bar());
     return 0;
 }

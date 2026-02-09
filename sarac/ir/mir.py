@@ -64,6 +64,7 @@ class MIRFunction:
         self.entry_block = None  # Entry basic block
         self.temp_counter = 0  # Counter for generating temporaries
         self.label_counter = 0  # Counter for generating labels
+        self.var_types = {}  # Map variable names to their types
     
     def new_temp(self):
         """Generate a new temporary variable name."""
@@ -228,6 +229,10 @@ class MIRGenerator:
         var_name = node.children[0].name if isinstance(node.children[0], Identifier) else None
         if not var_name:
             return
+        
+        # Track variable type
+        if hasattr(node, 'type') and node.type is not None:
+            self.current_function.var_types[var_name] = node.type
         
         # If there's an initializer, process it
         if node.initializer and len(node.children) > 1:

@@ -148,6 +148,7 @@ class LLVMGenerator:
         self.current_function = func
         self.temp_to_llvm = {}
         self.var_to_llvm = {}
+        self.var_type_map = {}  # Map variable names to their LLVM types
         self.label_map = {}
         self.llvm_temp_counter = 1  # Start at 1 for LLVM IR numbering
         self.alloca_instructions = []
@@ -198,6 +199,18 @@ class LLVMGenerator:
             for alloca_line in self.alloca_instructions:
                 self.emit(f"  {alloca_line}")
         
+        # Initialize variables to default values
+        for var_name, alloca in self.var_to_llvm.items():
+            var_type = func.var_types.get(var_name)
+            if var_type:
+                llvm_type = self.type_to_llvm(var_type)
+                # Initialize string variables to null
+                if llvm_type == "i8*":
+                    null_ptr = self.new_llvm_temp()
+                    self.emit(f"  {null_ptr} = getelementptr inbounds i8, i8* null, i32 0")
+                    self.emit(f"  store i8* {null_ptr}, i8** {alloca}")
+                # Other types can remain uninitialized (will be 0 by default)
+        
         # Store function parameters into allocas
         for i, param_name in enumerate(func.parameters):
             if param_name not in self.var_to_llvm:
@@ -221,16 +234,24 @@ class LLVMGenerator:
                 if instr.op == Op.LOAD:
                     var_name = instr.operands[0]
                     if var_name not in self.var_to_llvm:
-                        llvm_type = "i32"  # TODO: get actual type
+                        # Get variable type from MIR function, default to i32
+                        var_type = func.var_types.get(var_name)
+                        llvm_type = self.type_to_llvm(var_type) if var_type else "i32"
                         alloca_temp = self.new_llvm_temp()
                         self.var_to_llvm[var_name] = alloca_temp
+                        # Store the type mapping for later use
+                        self.var_type_map[var_name] = llvm_type
                         self.alloca_instructions.append(f"{alloca_temp} = alloca {llvm_type}")
                 elif instr.op == Op.STORE:
                     var_name = instr.operands[0]
                     if var_name not in self.var_to_llvm:
-                        llvm_type = "i32"  # TODO: get actual type
+                        # Get variable type from MIR function, default to i32
+                        var_type = func.var_types.get(var_name)
+                        llvm_type = self.type_to_llvm(var_type) if var_type else "i32"
                         alloca_temp = self.new_llvm_temp()
                         self.var_to_llvm[var_name] = alloca_temp
+                        # Store the type mapping for later use
+                        self.var_type_map[var_name] = llvm_type
                         self.alloca_instructions.append(f"{alloca_temp} = alloca {llvm_type}")
         
         # Also allocate for function parameters
@@ -311,7 +332,8 @@ class LLVMGenerator:
         elif op == Op.LOAD:
             # Load variable: %t = load i32, i32* %var
             var_name = operands[0]
-            llvm_type = "i32"  # TODO: get actual type
+            # Get variable type from type map (set during collect_variables)
+            llvm_type = self.var_type_map.get(var_name, "i32")
             llvm_var = self.var_to_llvm.get(var_name)
             if not llvm_var:
                 # Should have been collected in first pass, but handle gracefully
@@ -321,34 +343,75 @@ class LLVMGenerator:
             self.emit(f"  {llvm_temp} = load {llvm_type}, {llvm_type}* {llvm_var}")
             if result:
                 self.temp_to_llvm[result] = llvm_temp
-                # Default to int for loaded variables (could be improved)
-                self.temp_types[result] = "int"
+                # Track type from variable
+                var_type = self.current_function.var_types.get(var_name)
+                if var_type:
+                    type_str = str(var_type).lower()
+                    self.temp_types[result] = type_str
+                else:
+                    self.temp_types[result] = "int"
         
         elif op == Op.STORE:
             # Store: store i32 %value, i32* %var
             var_name = operands[0]
             value_temp = operands[1]
-            llvm_type = "i32"  # TODO: get actual type
+            # Get variable type from type map (set during collect_variables)
+            llvm_type = self.var_type_map.get(var_name, "i32")
             llvm_var = self.var_to_llvm.get(var_name)
             if not llvm_var:
                 # Should have been collected in first pass, but handle gracefully
                 llvm_var = self.new_llvm_temp()
                 self.var_to_llvm[var_name] = llvm_var
             llvm_value = self.get_llvm_value(value_temp)
+            
+            # Handle type conversion if needed
+            # If storing to char (i8) but value is i32, truncate
+            if llvm_type == "i8" and not llvm_value.startswith('%'):
+                # Constant - can use directly if it fits
+                try:
+                    val = int(llvm_value)
+                    if 0 <= val <= 255:
+                        llvm_value = str(val)
+                    else:
+                        # Truncate constant
+                        llvm_value = str(val & 0xFF)
+                except ValueError:
+                    pass
+            elif llvm_type == "i8" and llvm_value.startswith('%'):
+                # Temporary - need to truncate from i32 to i8
+                trunc_temp = self.new_llvm_temp()
+                self.emit(f"  {trunc_temp} = trunc i32 {llvm_value} to i8")
+                llvm_value = trunc_temp
+            
             self.emit(f"  store {llvm_type} {llvm_value}, {llvm_type}* {llvm_var}")
         
         elif op == Op.ADD:
             # Add: %t = add i32 %a, %b
             a = self.get_llvm_value(operands[0])
             b = self.get_llvm_value(operands[1])
+            
+            # Check types - if either is string, convert pointer to int (hack to prevent segfault)
+            a_type = self.temp_types.get(operands[0], "int")
+            b_type = self.temp_types.get(operands[1], "int")
+            
+            # Convert string pointers to integers if needed (this is a workaround for invalid code)
+            if a_type == "string" and a.startswith('%'):
+                ptr_as_int = self.new_llvm_temp()
+                self.emit(f"  {ptr_as_int} = ptrtoint i8* {a} to i32")
+                a = ptr_as_int
+                a_type = "int"
+            if b_type == "string" and b.startswith('%'):
+                ptr_as_int = self.new_llvm_temp()
+                self.emit(f"  {ptr_as_int} = ptrtoint i8* {b} to i32")
+                b = ptr_as_int
+                b_type = "int"
+            
             llvm_type = "i32"
             llvm_temp = self.new_llvm_temp()
             self.emit(f"  {llvm_temp} = add {llvm_type} {a}, {b}")
             if result:
                 self.temp_to_llvm[result] = llvm_temp
                 # Binary operations on numeric types produce numeric types
-                a_type = self.temp_types.get(operands[0], "int")
-                b_type = self.temp_types.get(operands[1], "int")
                 # If either is float, result is float; otherwise int
                 if a_type == "float" or b_type == "float":
                     self.temp_types[result] = "float"
@@ -811,16 +874,18 @@ class LLVMGenerator:
                     escape_map = {'n': '\n', 't': '\t', 'r': '\r', '\\': '\\', "'": "'", '"': '"'}
                     char = escape_map.get(char_str[1], char_str[1])
                     return str(ord(char))
-            # Check if it's a single character (character literal value from Constant node)
-            elif len(operand) == 1:
-                # This is a character literal value (like 'a' stored as the string 'a')
-                return str(ord(operand))
-            # Try to parse as integer
+            # Try to parse as integer FIRST (before treating single chars as character literals)
+            # This fixes the bug where "1" was being treated as a character
             try:
                 int_val = int(operand)
                 return str(int_val)
             except ValueError:
                 pass
+            # Check if it's a single character (character literal value from Constant node)
+            # Only treat as character if it's NOT a digit
+            if len(operand) == 1 and not operand.isdigit():
+                # This is a character literal value (like 'a' stored as the string 'a')
+                return str(ord(operand))
         
         # Check if it's an integer
         if isinstance(operand, int):
