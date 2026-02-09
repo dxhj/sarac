@@ -87,7 +87,8 @@ Examples:
     args = parser.parse_args()
     
     # Check for optimization flags in sys.argv (handle -O0, -O1, etc.)
-    for opt in ['-O0', '-O1', '-O2', '-O3', '-Os', '-Oz']:
+    optimization_flags = ['-O0', '-O1', '-O2', '-O3', '-Os', '-Oz']
+    for opt in optimization_flags:
         if opt in sys.argv:
             args.optimization_level = opt[1:]  # Remove the '-'
             break

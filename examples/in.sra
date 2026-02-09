@@ -2,10 +2,6 @@ bar(): char {
     return 'a';
 }
 
-bar(): char {
-    return 'a';
-}
-
 fib(int n): int {
     if (n <= 1) {
         return n;

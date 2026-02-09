@@ -2,6 +2,7 @@ import sys
 
 
 def error(func):
+    """Decorator to handle error reporting and exception raising."""
     def error_wrapper(cls, msg, line=None, column=None):
         # Stop on first error
         Error.errors += 1

@@ -47,8 +47,7 @@ class Parser(object):
 
     def p_parameters(self, p):
         """parameters : parameter_list
-                      | 
-        """
+                      |"""
         if len(p) == 2:
             p[0] = p[1]
         else:
@@ -75,8 +74,7 @@ class Parser(object):
 
     def p_declaration_list(self, p):
         """declarations : declarations declaration
-                        |
-        """
+                        |"""
         if len(p) == 3:
             p[0] = p[1]
             p[0].children.append(p[2])
@@ -98,8 +96,7 @@ class Parser(object):
 
     def p_statement_list(self, p):
         """statements : statements statement
-                      |
-        """
+                      |"""
         if len(p) == 3:
             p[0] = p[1]
             p[0].children.append(p[2])
@@ -201,10 +198,9 @@ class Parser(object):
 
     def p_primary_expression_number(self, p):
         """primary_expression : NUMBER"""
-        if '.' in p[1][0]:
-            p[0] = Constant(p[1][0], floatTypeDescriptor)
-        else:
-            p[0] = Constant(p[1][0], integerTypeDescriptor)
+        number_value = p[1][0]
+        type_desc = floatTypeDescriptor if '.' in number_value else integerTypeDescriptor
+        p[0] = Constant(number_value, type_desc)
 
     def p_primary_expression_character(self, p):
         """primary_expression : CHARACTER_LITERAL"""
@@ -267,14 +263,13 @@ class Parser(object):
                           | INT
                           | FLOAT
                           | STRING"""
-        if p[1][0] == "char":
-            p[0] = charTypeDescriptor
-        elif p[1][0] == "int":
-            p[0] = integerTypeDescriptor
-        elif p[1][0] == "float":
-            p[0] = floatTypeDescriptor
-        else:
-            p[0] = stringTypeDescriptor
+        type_map = {
+            "char": charTypeDescriptor,
+            "int": integerTypeDescriptor,
+            "float": floatTypeDescriptor,
+            "string": stringTypeDescriptor
+        }
+        p[0] = type_map.get(p[1][0], stringTypeDescriptor)
 
     def p_error(self, p):
         self.error_count += 1
@@ -282,11 +277,11 @@ class Parser(object):
             Error.syntax_error("unexpected token '%s'" % p.value[0],
                                p.value[1], p.value[2])
 
+            # Skip tokens until we find a synchronization point
+            recovery_tokens = {"SEMICOLON", "LBRACE"}
             while True:
                 token = self.parser.token()
-                if token is None \
-                        or token.type == "SEMICOLON" \
-                        or token.type == "LBRACE":
+                if token is None or token.type in recovery_tokens:
                     break
 
             self.parser.errok()

@@ -200,7 +200,8 @@ class CodeGenerator:
             try:
                 if os.path.exists(temp_file):
                     os.unlink(temp_file)
-            except:
+            except (OSError, IOError):
+                # Ignore errors when cleaning up temp files
                 pass
         self.temp_files = []
 

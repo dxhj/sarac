@@ -62,10 +62,26 @@ class Lexer(object):
         last_cr = t.lexer.lexdata.rfind('\n', 0, t.lexpos)
         return t.lexpos - last_cr
 
+    def _set_token_value(self, t, value=None):
+        """Helper method to set token value with line and column information."""
+        if value is None:
+            value = t.value
+        t.value = (value, t.lineno, self.token_column(t))
+        return t
+
+    _ESCAPE_MAP = {
+        'n': '\n',
+        't': '\t',
+        'r': '\r',
+        '\\': '\\',
+        "'": "'",
+        '"': '"',
+        '0': '\0'
+    }
+
     def t_NUMBER(self, t):
         r"""[0-9]+(\.[0-9]+)?"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_CHARACTER_LITERAL(self, t):
         r"""'([^'\\]|\\.)'"""
@@ -75,22 +91,12 @@ class Lexer(object):
         # Handle escape sequences
         if len(char_content) == 2 and char_content[0] == '\\':
             escape_char = char_content[1]
-            escape_map = {
-                'n': '\n',
-                't': '\t',
-                'r': '\r',
-                '\\': '\\',
-                "'": "'",
-                '"': '"',
-                '0': '\0'
-            }
-            char_value = escape_map.get(escape_char, escape_char)
+            char_value = self._ESCAPE_MAP.get(escape_char, escape_char)
         else:
             char_value = char_content
         
         # Store the character value as a string (single character)
-        t.value = (char_value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t, char_value)
 
     def t_STRING_LITERAL(self, t):
         r'''"([^"\\]|\\.)*"'''
@@ -103,136 +109,104 @@ class Lexer(object):
         while i < len(string_content):
             if string_content[i] == '\\' and i + 1 < len(string_content):
                 escape_char = string_content[i + 1]
-                escape_map = {
-                    'n': '\n',
-                    't': '\t',
-                    'r': '\r',
-                    '\\': '\\',
-                    "'": "'",
-                    '"': '"',
-                    '0': '\0'
-                }
-                result.append(escape_map.get(escape_char, escape_char))
+                result.append(self._ESCAPE_MAP.get(escape_char, escape_char))
                 i += 2
             else:
                 result.append(string_content[i])
                 i += 1
         
         string_value = ''.join(result)
-        t.value = (string_value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t, string_value)
 
     def t_IDENTIFIER(self, t):
         r"""_*[a-zA-Z][_a-zA-Z0-9]*"""
         t.type = self.keywords.get(t.value, 'IDENTIFIER')
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_PLUS(self, t):
         r"""\+"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_MINUS(self, t):
         r"""\-"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_TIMES(self, t):
         r"""\*"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_DIV(self, t):
         r"""\/"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_NOT(self, t):
         r"""!"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     # Order matters: longer patterns must come before shorter ones
     def t_LE(self, t):
         r"""<="""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_GE(self, t):
         r""">="""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_EQUAL(self, t):
         r"""=="""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_NOT_EQUAL(self, t):
         r"""!="""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_LT(self, t):
         r"""<"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_GT(self, t):
         r""">"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_ASSIGN(self, t):
         r"""="""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_LPAREN(self, t):
         r"""\("""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_RPAREN(self, t):
         r"""\)"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_LBRACKET(self, t):
         r"""\["""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_RBRACKET(self, t):
         r"""\]"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_LBRACE(self, t):
         r"""\{"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_RBRACE(self, t):
         r"""\}"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_COMMA(self, t):
         r""","""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_SEMICOLON(self, t):
         r""";"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_COLON(self, t):
         r""":"""
-        t.value = (t.value, t.lineno, self.token_column(t))
-        return t
+        return self._set_token_value(t)
 
     def t_NEWLINE(self, t):
         r"""\n+"""
