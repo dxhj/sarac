@@ -67,9 +67,9 @@ class CodeGenerator:
                 llvm_file = f.name
                 self.temp_files.append(llvm_file)
             
-            # Compile with clang
+            # Compile with clang, linking against libc
             result = subprocess.run(
-                ['clang', llvm_file, '-o', output_name],
+                ['clang', llvm_file, '-o', output_name, '-lc'],
                 capture_output=True,
                 text=True
             )

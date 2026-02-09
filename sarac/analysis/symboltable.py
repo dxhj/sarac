@@ -1,8 +1,9 @@
 from sarac.analysis.table import SymbolTable
 from sarac.analysis.attributes import FunctionAttributes, VariableAttributes
 from sarac.frontend.ast import TranslationUnitList, FunctionDefinition,\
-    CompoundStatement, Declaration, Assignment, Reference, FunctionCall
+    CompoundStatement, Declaration, Assignment, Reference, FunctionCall, Identifier, ParameterList, Declaration as ASTDeclaration
 from sarac.utils.error import Error
+from sarac.analysis.types import voidTypeDescriptor, integerTypeDescriptor, charTypeDescriptor, floatTypeDescriptor, stringTypeDescriptor
 
 
 class BuildSymbolTableVisitor(object):
@@ -10,6 +11,9 @@ class BuildSymbolTableVisitor(object):
         self.symbol_table = SymbolTable()
         self.symbol_table.open_scope(self.symbol_table.global_scope)
         self.offset = 0  # Offsets are treated as indexes to facilitate target generation
+        
+        # Register built-in functions
+        self._register_builtins()
 
     def visit(self, node):
         if isinstance(node, FunctionDefinition):
@@ -63,13 +67,23 @@ class BuildSymbolTableVisitor(object):
                 node.identifier.type = attributes.type
 
         node.accept_children(self)
-
-        if isinstance(node, TranslationUnitList):
-            node.names = self.symbol_table.global_scope
-
-        elif isinstance(node, CompoundStatement):
-            node.names = self.symbol_table.current_scope()
-            self.symbol_table.close_scope()
+    
+    def _register_builtins(self):
+        """Register built-in functions in the global symbol table."""
+        # Register print function
+        # print can accept one argument of any type (int, char, float, string)
+        # We'll use a generic parameter type that accepts any type
+        print_identifier = Identifier("print")
+        print_attrs = FunctionAttributes()
+        print_attrs.name = "print"
+        print_attrs.type = voidTypeDescriptor
+        # Create a parameter list with a single parameter of generic type
+        # We'll use int as a placeholder, but the actual type checking will be done in LLVM generation
+        param_identifier = Identifier("value", integerTypeDescriptor)
+        param_decl = ASTDeclaration(integerTypeDescriptor, param_identifier)
+        param_list = ParameterList([param_decl])
+        print_attrs.parameters = param_list
+        self.symbol_table.put(print_identifier, print_attrs)
 
 
 class SymbolTablePrinterVisitor(object):

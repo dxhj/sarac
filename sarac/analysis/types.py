@@ -43,6 +43,14 @@ class StringTypeDescriptor(TypeDescriptor):
         return "string"
 
 
+class VoidTypeDescriptor(TypeDescriptor):
+    def __init__(self):
+        super(VoidTypeDescriptor, self).__init__(0)
+
+    def __repr__(self):
+        return "void"
+
+
 def is_numeric_type(ttype):
     """Check if a type is numeric. Returns True only for int, float, and char.
     String types are NOT numeric types."""
@@ -68,3 +76,4 @@ charTypeDescriptor = CharTypeDescriptor()
 integerTypeDescriptor = IntegerTypeDescriptor()
 floatTypeDescriptor = FloatTypeDescriptor()
 stringTypeDescriptor = StringTypeDescriptor()
+voidTypeDescriptor = VoidTypeDescriptor()

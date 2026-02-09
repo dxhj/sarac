@@ -249,6 +249,10 @@ class MIRGenerator:
             self.visit_while(node)
         elif isinstance(node, For):
             self.visit_for(node)
+        elif isinstance(node, FunctionCall):
+            # Function call as a statement (e.g., print(...);)
+            # Visit as expression to generate the call, but ignore the return value
+            self.visit_expression(node)
         else:
             # Other statement types
             node.accept_children(self)
