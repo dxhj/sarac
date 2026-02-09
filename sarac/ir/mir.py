@@ -25,11 +25,47 @@ class Instruction:
         self.result = None  # Result temporary (if any)
         self.operand_types = None  # Optional: type information for operands (used for constants)
     
+    def _format_operand(self, operand, index):
+        """Format an operand for display, adding quotes for string/char constants."""
+        # Check if we have type information for this operand
+        if hasattr(self, 'operand_types') and self.operand_types and index < len(self.operand_types):
+            operand_type = str(self.operand_types[index]).lower()
+            if operand_type == "string":
+                # String constant: wrap in double quotes
+                return f'"{operand}"'
+            elif operand_type == "char":
+                # Character constant: wrap in single quotes
+                return f"'{operand}'"
+        
+        # For CONST instructions, try to infer type from the operand value
+        if self.op == Op.CONST and index == 0:
+            # Check if it's a string (not a number and not a single char)
+            if isinstance(operand, str):
+                # Try to determine if it's a string literal or char
+                # If it's a single character, it might be a char
+                if len(operand) == 1:
+                    # Could be a char, but we can't be sure without type info
+                    # Check if it's numeric - if so, it's not a char/string
+                    try:
+                        float(operand)
+                        return str(operand)  # It's a numeric string
+                    except (ValueError, TypeError):
+                        # Single char, likely a char constant
+                        return f"'{operand}'"
+                else:
+                    # Multi-character string - likely a string literal
+                    return f'"{operand}"'
+        
+        # Default: return as string
+        return str(operand)
+    
     def __repr__(self):
+        # Format operands with proper quoting
+        formatted_operands = [self._format_operand(op, i) for i, op in enumerate(self.operands)]
         if self.result:
-            return f"{self.result} = {self.op}({', '.join(map(str, self.operands))})"
+            return f"{self.result} = {self.op}({', '.join(formatted_operands)})"
         else:
-            return f"{self.op}({', '.join(map(str, self.operands))})"
+            return f"{self.op}({', '.join(formatted_operands)})"
 
 
 class BasicBlock:
