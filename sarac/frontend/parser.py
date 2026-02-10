@@ -265,12 +265,14 @@ class Parser(object):
         """type_specifier : CHAR
                           | INT
                           | FLOAT
-                          | STRING"""
+                          | STRING
+                          | VOID"""
         type_map = {
             "char": charTypeDescriptor,
             "int": integerTypeDescriptor,
             "float": floatTypeDescriptor,
-            "string": stringTypeDescriptor
+            "string": stringTypeDescriptor,
+            "void": voidTypeDescriptor
         }
         p[0] = type_map.get(p[1][0], stringTypeDescriptor)
 

@@ -1,6 +1,6 @@
-from sarac.frontend.ast import Reference, BinaryOperator, UnaryOperator, Assignment, FunctionDefinition, Return, FunctionCall, Constant
+from sarac.frontend.ast import Reference, BinaryOperator, UnaryOperator, Assignment, FunctionDefinition, Return, FunctionCall, Constant, Declaration
 from sarac.analysis.attributes import VariableAttributes
-from sarac.analysis.types import generalize_type
+from sarac.analysis.types import generalize_type, voidTypeDescriptor
 from sarac.utils.error import Error
 
 
@@ -32,10 +32,11 @@ class SemanticsVisitor(object):
             
             if node.expression is None:
                 # return; without expression
-                # For now, we require a return value (no void type yet)
-                Error.type_error("return statement must return a value", 
-                               node.coord.line if node.coord else 0, 
-                               node.coord.column if node.coord else 0)
+                # Allow this only for void functions
+                if expected_return_type != voidTypeDescriptor:
+                    Error.type_error("return statement must return a value (function returns %s)" % expected_return_type, 
+                                   node.coord.line if node.coord else 0, 
+                                   node.coord.column if node.coord else 0)
             else:
                 # return expression;
                 node.expression.accept(self)
@@ -43,6 +44,11 @@ class SemanticsVisitor(object):
                 
                 if actual_return_type is None:
                     Error.type_error("return expression has no type", 
+                                   node.coord.line if node.coord else 0, 
+                                   node.coord.column if node.coord else 0)
+                elif expected_return_type == voidTypeDescriptor:
+                    # Void function cannot return a value
+                    Error.type_error("void function cannot return a value", 
                                    node.coord.line if node.coord else 0, 
                                    node.coord.column if node.coord else 0)
                 elif actual_return_type != expected_return_type:
@@ -121,6 +127,16 @@ class SemanticsVisitor(object):
                     Error.type_error("\"%s\" is not a function" % node.name,
                                    node.coord.line if node.coord else 0,
                                    node.coord.column if node.coord else 0)
+            return
+
+        if isinstance(node, Declaration):
+            # Prevent void type variables
+            if node.type == voidTypeDescriptor:
+                Error.type_error("cannot declare variable of type void", 
+                               node.coord.line if node.coord else 0, 
+                               node.coord.column if node.coord else 0)
+            # Visit children (identifier and optional initializer)
+            node.accept_children(self)
             return
 
         if isinstance(node, Assignment):

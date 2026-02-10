@@ -295,11 +295,19 @@ class LLVMGenerator:
         
         # Process instructions
         self.pending_params = []  # Reset for each block
+        has_terminator = False
         for instr in block.instructions:
             self.generate_instruction(instr)
             # Stop processing after return (unreachable code)
-            if instr.op in (Op.RETURN, Op.RETVAL):
+            if instr.op in (Op.RETURN, Op.RETVAL, Op.JUMP, Op.BRANCH):
+                has_terminator = True
                 break
+        
+        # If block has no terminator and function is void, add ret void
+        if not has_terminator and not block.instructions:
+            return_type = self.type_to_llvm(self.current_function.return_type)
+            if return_type == "void":
+                self.emit("  ret void")
     
     def generate_instruction(self, instr):
         """Generate LLVM IR for a single instruction."""
@@ -971,27 +979,32 @@ class LLVMGenerator:
             else:
                 param_str = ""
             
-            llvm_temp = self.new_llvm_temp()
-            self.emit(f"  {llvm_temp} = call {return_type} @{func_name}({param_str})")
-            if result:
-                self.temp_to_llvm[result] = llvm_temp
-                # Track the return type of the function call
-                if func_name in self.mir_functions:
-                    func_return_type = self.mir_functions[func_name].return_type
-                    if func_return_type:
-                        type_str = str(func_return_type).lower()
-                        if type_str == "char":
-                            self.temp_types[result] = "char"
-                        elif type_str == "string":
-                            self.temp_types[result] = "string"
-                        elif type_str == "float":
-                            self.temp_types[result] = "float"
+            # For void functions, don't assign to a temporary
+            if return_type == "void":
+                self.emit(f"  call void @{func_name}({param_str})")
+                # Void functions don't return a value, so no result temp
+            else:
+                llvm_temp = self.new_llvm_temp()
+                self.emit(f"  {llvm_temp} = call {return_type} @{func_name}({param_str})")
+                if result:
+                    self.temp_to_llvm[result] = llvm_temp
+                    # Track the return type of the function call
+                    if func_name in self.mir_functions:
+                        func_return_type = self.mir_functions[func_name].return_type
+                        if func_return_type:
+                            type_str = str(func_return_type).lower()
+                            if type_str == "char":
+                                self.temp_types[result] = "char"
+                            elif type_str == "string":
+                                self.temp_types[result] = "string"
+                            elif type_str == "float":
+                                self.temp_types[result] = "float"
+                            else:
+                                self.temp_types[result] = "int"
                         else:
                             self.temp_types[result] = "int"
                     else:
-                        self.temp_types[result] = "int"
-                else:
-                    self.temp_types[result] = "int"  # Default
+                        self.temp_types[result] = "int"  # Default
     
     def _get_operand_type(self, operand):
         """Try to determine the type of an operand (temp name or constant)."""

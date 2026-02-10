@@ -19,6 +19,7 @@ class Lexer(object):
         'int':   'INT',
         'float': 'FLOAT',
         'string': 'STRING',
+        'void':  'VOID',
         'return': 'RETURN'
     }
 

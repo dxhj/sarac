@@ -2,6 +2,15 @@ bar(): char {
     return 'a';
 }
 
+loop(): void {
+    int n = 0;
+    print("here");
+    while (n < 10) {
+        n = n + 1;
+        print(n);
+    }
+}
+
 shift_test(char type, int n): int {
     if (type == 'l') {
         return n << 2;
@@ -33,5 +42,6 @@ main(): int {
     print(bar());
     print("olá", 2, bar(), fib(10));
     print(fib(5), bar(), 2, "olá");
+    loop();
     return 0;
 }
