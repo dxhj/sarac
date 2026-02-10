@@ -140,6 +140,10 @@ class Op:
     MOD = "mod"
     NEG = "neg"
     
+    # Bitwise
+    SHL = "shl"  # Left shift (<<)
+    SHR = "shr"  # Right shift (>>)
+    
     # Comparisons
     EQ = "eq"
     NE = "ne"
@@ -523,6 +527,8 @@ class MIRGenerator:
                 '*': Op.MUL,
                 '/': Op.DIV,
                 '%': Op.MOD,
+                '<<': Op.SHL,
+                '>>': Op.SHR,
                 '==': Op.EQ,
                 '!=': Op.NE,
                 '<': Op.LT,

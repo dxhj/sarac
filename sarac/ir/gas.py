@@ -325,6 +325,42 @@ class GASGenerator:
                 self.emit(f"  movq %rdx, {result_reg}")  # Remainder in rdx
                 self.temp_to_reg[result] = result_reg
         
+        elif op == Op.SHL:
+            # Left shift: shlq %cl, %reg (or shlq $imm, %reg)
+            if result:
+                left_reg = self.get_temp_reg(operands[0])
+                right_reg = self.get_temp_reg(operands[1])
+                result_reg = self.reg_allocator.allocate()
+                self.emit(f"  movq {left_reg}, {result_reg}")
+                # Check if right operand is a constant
+                if isinstance(operands[1], str) and operands[1].isdigit():
+                    # Immediate shift
+                    self.emit(f"  shlq ${operands[1]}, {result_reg}")
+                else:
+                    # Shift by register (must be %cl for x86-64)
+                    # Move right operand to %cl
+                    self.emit(f"  movq {right_reg}, %rcx")
+                    self.emit(f"  shlq %cl, {result_reg}")
+                self.temp_to_reg[result] = result_reg
+        
+        elif op == Op.SHR:
+            # Right shift (arithmetic): sarq %cl, %reg (or sarq $imm, %reg)
+            if result:
+                left_reg = self.get_temp_reg(operands[0])
+                right_reg = self.get_temp_reg(operands[1])
+                result_reg = self.reg_allocator.allocate()
+                self.emit(f"  movq {left_reg}, {result_reg}")
+                # Check if right operand is a constant
+                if isinstance(operands[1], str) and operands[1].isdigit():
+                    # Immediate shift
+                    self.emit(f"  sarq ${operands[1]}, {result_reg}")
+                else:
+                    # Shift by register (must be %cl for x86-64)
+                    # Move right operand to %cl
+                    self.emit(f"  movq {right_reg}, %rcx")
+                    self.emit(f"  sarq %cl, {result_reg}")
+                self.temp_to_reg[result] = result_reg
+        
         elif op == Op.EQ:
             if result:
                 left_reg = self.get_temp_reg(operands[0])

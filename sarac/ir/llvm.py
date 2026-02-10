@@ -688,6 +688,29 @@ class LLVMGenerator:
                 # Modulo always produces int
                 self.temp_types[result] = "int"
         
+        elif op == Op.SHL:
+            # Left shift: %t = shl i32 %a, %b
+            a = self.get_llvm_value(operands[0])
+            b = self.get_llvm_value(operands[1])
+            llvm_type = "i32"
+            llvm_temp = self.new_llvm_temp()
+            self.emit(f"  {llvm_temp} = shl {llvm_type} {a}, {b}")
+            if result:
+                self.temp_to_llvm[result] = llvm_temp
+                self.temp_types[result] = "int"
+        
+        elif op == Op.SHR:
+            # Right shift (arithmetic): %t = ashr i32 %a, %b
+            # Using arithmetic shift for signed integers
+            a = self.get_llvm_value(operands[0])
+            b = self.get_llvm_value(operands[1])
+            llvm_type = "i32"
+            llvm_temp = self.new_llvm_temp()
+            self.emit(f"  {llvm_temp} = ashr {llvm_type} {a}, {b}")
+            if result:
+                self.temp_to_llvm[result] = llvm_temp
+                self.temp_types[result] = "int"
+        
         elif op == Op.EQ:
             # Equal: %t = icmp eq i32 %a, %b
             a = self.get_llvm_value(operands[0])
