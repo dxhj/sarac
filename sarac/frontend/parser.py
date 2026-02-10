@@ -11,6 +11,7 @@ class Parser(object):
         ('left', 'EQUAL', 'NOT_EQUAL'),
         ('left', 'LT', 'LE', 'GT', 'GE'),
         ('left', 'PLUS', 'MINUS'),
+        ('left', 'BITWISE_LS', 'BITWISE_RS'),
         ('left', 'TIMES', 'DIV'),
     )
 
@@ -175,6 +176,8 @@ class Parser(object):
                       | expression GE expression
                       | expression PLUS expression
                       | expression MINUS expression
+                      | expression BITWISE_LS expression
+                      | expression BITWISE_RS expression
                       | expression TIMES expression 
                       | expression DIV expression"""
         if len(p) == 2:
