@@ -242,6 +242,24 @@ class LLVMGenerator:
     
     def collect_variables(self, func):
         """First pass: collect all variables that need allocation."""
+        self.var_type_map = {}  # Map variable names to their LLVM types
+        
+        # First, allocate for function parameters with correct types
+        # This must be done BEFORE collecting other variables to avoid conflicts
+        if func.parameter_types:
+            param_types = [self.type_to_llvm(pt) for pt in func.parameter_types]
+        else:
+            param_types = [self.type_to_llvm("int") for _ in func.parameters]
+        
+        for i, param_name in enumerate(func.parameters):
+            if param_name not in self.var_to_llvm:
+                param_type = param_types[i] if i < len(param_types) else "i32"
+                alloca_temp = self.new_llvm_temp()
+                self.var_to_llvm[param_name] = alloca_temp
+                self.var_type_map[param_name] = param_type
+                self.alloca_instructions.append(f"{alloca_temp} = alloca {param_type}")
+        
+        # Then collect other variables from LOAD/STORE instructions
         for block in func.blocks:
             for instr in block.instructions:
                 if instr.op == Op.LOAD:
@@ -266,19 +284,6 @@ class LLVMGenerator:
                         # Store the type mapping for later use
                         self.var_type_map[var_name] = llvm_type
                         self.alloca_instructions.append(f"{alloca_temp} = alloca {llvm_type}")
-        
-        # Also allocate for function parameters
-        if func.parameter_types:
-            param_types = [self.type_to_llvm(pt) for pt in func.parameter_types]
-        else:
-            param_types = [self.type_to_llvm("int") for _ in func.parameters]
-        
-        for i, param_name in enumerate(func.parameters):
-            if param_name not in self.var_to_llvm:
-                param_type = param_types[i] if i < len(param_types) else "i32"
-                alloca_temp = self.new_llvm_temp()
-                self.var_to_llvm[param_name] = alloca_temp
-                self.alloca_instructions.append(f"{alloca_temp} = alloca {param_type}")
     
     def generate_block(self, block):
         """Generate LLVM IR for a basic block."""
@@ -399,6 +404,9 @@ class LLVMGenerator:
                 if var_type:
                     type_str = str(var_type).lower()
                     self.temp_types[result] = type_str
+                elif llvm_type == "i8":
+                    # If loaded as i8, it's a char
+                    self.temp_types[result] = "char"
                 else:
                     self.temp_types[result] = "int"
         
@@ -715,7 +723,23 @@ class LLVMGenerator:
             # Equal: %t = icmp eq i32 %a, %b
             a = self.get_llvm_value(operands[0])
             b = self.get_llvm_value(operands[1])
+            a_type = self.temp_types.get(operands[0], "int")
+            b_type = self.temp_types.get(operands[1], "int")
+            
+            # Always zero-extend chars to i32 for comparison to avoid type mismatches
+            if a_type == "char" and a.startswith('%'):
+                a_ext = self.new_llvm_temp()
+                self.emit(f"  {a_ext} = zext i8 {a} to i32")
+                a = a_ext
+            
+            if b_type == "char" and b.startswith('%'):
+                b_ext = self.new_llvm_temp()
+                self.emit(f"  {b_ext} = zext i8 {b} to i32")
+                b = b_ext
+            
+            # Always use i32 for comparisons
             llvm_type = "i32"
+            
             llvm_temp = self.new_llvm_temp()
             self.emit(f"  {llvm_temp} = icmp eq {llvm_type} {a}, {b}")
             if result:
