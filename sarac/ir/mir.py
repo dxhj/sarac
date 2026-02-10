@@ -298,6 +298,9 @@ class MIRGenerator:
             # Function call as a statement (e.g., print(...);)
             # Visit as expression to generate the call, but ignore the return value
             self.visit_expression(node)
+        elif isinstance(node, CompoundStatement):
+            # Compound statement (block with braces)
+            self.visit_compound_statement(node)
         else:
             # Other statement types
             node.accept_children(self)

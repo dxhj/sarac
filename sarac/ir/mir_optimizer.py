@@ -441,33 +441,43 @@ class MIROptimizer:
         """
         Remove stores to variables that are never read before the next store.
         
+        Note: This only removes stores within a single block. Stores that may be
+        read in other blocks are preserved.
+        
         Returns:
             True if any stores were removed, False otherwise
         """
         changed = False
         
+        # First, collect all variables that are loaded anywhere in the function
+        all_loads = set()
+        for block in mir_func.blocks:
+            for instr in block.instructions:
+                if instr.op == Op.LOAD and len(instr.operands) > 0:
+                    all_loads.add(instr.operands[0])
+        
         for block in mir_func.blocks:
             # Track last store to each variable
             last_store = {}  # var_name -> (index, instruction)
-            loads = set()  # Set of variables that are loaded
+            loads = set()  # Set of variables that are loaded in this block
             
-            # First pass: find all loads
+            # First pass: find all loads in this block
             for i, instr in enumerate(block.instructions):
                 if instr.op == Op.LOAD and len(instr.operands) > 0:
-                    var_name = instr.operands[0]
-                    loads.add(var_name)
+                    loads.add(instr.operands[0])
                 elif instr.op == Op.STORE and len(instr.operands) >= 2:
                     var_name = instr.operands[0]
                     last_store[var_name] = (i, instr)
             
             # Second pass: remove stores that are never loaded
+            # Only remove if variable is not loaded anywhere in the function
             new_instructions = []
             for i, instr in enumerate(block.instructions):
                 if instr.op == Op.STORE and len(instr.operands) >= 2:
                     var_name = instr.operands[0]
-                    # Check if this variable is ever loaded
-                    if var_name not in loads:
-                        # Check if this is the last store to this variable in this block
+                    # Only remove if variable is never loaded anywhere in the function
+                    # AND this is the last store to this variable in this block
+                    if var_name not in all_loads:
                         if var_name in last_store and last_store[var_name][0] == i:
                             # This store is dead - skip it
                             changed = True
