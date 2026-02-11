@@ -12,7 +12,7 @@ from sarac.frontend.ast import (
     TranslationUnitList, FunctionDefinition, Identifier,
     DeclarationList, StatementList, Assignment, Return,
     If, While, For, CompoundStatement, Constant, Reference,
-    BinaryOperator, UnaryOperator, FunctionCall
+    BinaryOperator, UnaryOperator, FunctionCall, PostfixIncrement, PostfixDecrement
 )
 
 
@@ -298,6 +298,10 @@ class MIRGenerator:
             # Function call as a statement (e.g., print(...);)
             # Visit as expression to generate the call, but ignore the return value
             self.visit_expression(node)
+        elif isinstance(node, PostfixIncrement) or isinstance(node, PostfixDecrement):
+            # Postfix increment/decrement as statement (e.g., x++;)
+            # Visit as expression to generate the code, but ignore the return value
+            self.visit_expression(node)
         elif isinstance(node, CompoundStatement):
             # Compound statement (block with braces)
             self.visit_compound_statement(node)
@@ -565,6 +569,46 @@ class MIRGenerator:
             unary_instr.result = temp
             self.current_block.add_instruction(unary_instr)
             return temp
+        
+        elif isinstance(node, PostfixIncrement) or isinstance(node, PostfixDecrement):
+            # Postfix increment/decrement: x++ or x--
+            # 1. Load current value
+            # 2. Increment/decrement variable
+            # 3. Return original value
+            if not isinstance(node.children[0], Reference):
+                # Should have been caught in semantic analysis, but handle gracefully
+                return self.visit_expression(node.children[0])
+            
+            var_name = node.children[0].name
+            # Load current value
+            load_temp = self.current_function.new_temp()
+            load_instr = Instruction(Op.LOAD, var_name)
+            load_instr.result = load_temp
+            self.current_block.add_instruction(load_instr)
+            
+            # Create increment/decrement value (1)
+            one_temp = self.current_function.new_temp()
+            one_instr = Instruction(Op.CONST, "1")
+            one_instr.result = one_temp
+            self.current_block.add_instruction(one_instr)
+            
+            # Add or subtract 1
+            if isinstance(node, PostfixIncrement):
+                op = Op.ADD
+            else:  # PostfixDecrement
+                op = Op.SUB
+            
+            new_value_temp = self.current_function.new_temp()
+            arith_instr = Instruction(op, load_temp, one_temp)
+            arith_instr.result = new_value_temp
+            self.current_block.add_instruction(arith_instr)
+            
+            # Store new value back to variable
+            store_instr = Instruction(Op.STORE, var_name, new_value_temp)
+            self.current_block.add_instruction(store_instr)
+            
+            # Return original value (before increment/decrement)
+            return load_temp
         
         elif isinstance(node, FunctionCall):
             # Function call

@@ -51,6 +51,8 @@ class Lexer(object):
         'EQUAL',
         'NOT_EQUAL',
         'ASSIGN',
+        'INCREMENT',
+        'DECREMENT',
     ] + list(keywords.values())
 
     t_ignore = ' \t'
@@ -124,6 +126,15 @@ class Lexer(object):
     def t_IDENTIFIER(self, t):
         r"""_*[a-zA-Z][_a-zA-Z0-9]*"""
         t.type = self.keywords.get(t.value, 'IDENTIFIER')
+        return self._set_token_value(t)
+
+    # Order matters: longer patterns (++ and --) must come before shorter ones (+ and -)
+    def t_INCREMENT(self, t):
+        r"""\+\+"""
+        return self._set_token_value(t)
+
+    def t_DECREMENT(self, t):
+        r"""\-\-"""
         return self._set_token_value(t)
 
     def t_PLUS(self, t):

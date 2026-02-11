@@ -9,6 +9,10 @@ loop(): void {
         n = n + 1;
         print(n);
     }
+
+    for (; n > 0; n--) {
+        print(n);
+    }
 }
 
 shift_test(char type, int n): int {

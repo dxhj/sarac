@@ -206,3 +206,19 @@ class ArgumentList(Node):
     def __init__(self, arguments):
         super(ArgumentList, self).__init__()
         self.children = arguments
+
+
+class PostfixIncrement(Expression):
+    """Postfix increment: x++"""
+    def __init__(self, operand):
+        super(PostfixIncrement, self).__init__()
+        self.children = [operand]
+        self.operand = operand
+
+
+class PostfixDecrement(Expression):
+    """Postfix decrement: x--"""
+    def __init__(self, operand):
+        super(PostfixDecrement, self).__init__()
+        self.children = [operand]
+        self.operand = operand

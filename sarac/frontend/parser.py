@@ -188,12 +188,26 @@ class Parser(object):
             p[0] = binary_op
 
     def p_unary_expression(self, p):
-        """unary_expression : primary_expression
+        """unary_expression : postfix_expression
                             | unary_operator unary_expression"""
         if len(p) == 2:
             p[0] = p[1]
         else:
             p[0] = UnaryOperator(p[1], p[2])
+
+    def p_postfix_expression(self, p):
+        """postfix_expression : primary_expression
+                             | postfix_expression INCREMENT
+                             | postfix_expression DECREMENT"""
+        if len(p) == 2:
+            p[0] = p[1]
+        else:
+            # Postfix increment or decrement
+            if p[2][0] == "++":
+                p[0] = PostfixIncrement(p[1])
+            else:  # "--"
+                p[0] = PostfixDecrement(p[1])
+            p[0].coord = Coord(p[2][1], p[2][2])
 
     def p_expression_paren(self, p):
         """primary_expression : LPAREN expression RPAREN"""
