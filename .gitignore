@@ -7,3 +7,6 @@ in.mir
 in.o
 in.s
 csarac
+.cursorrules
+skills-lock.json
+.agents
