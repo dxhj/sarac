@@ -105,9 +105,10 @@ class LLVMGenerator:
         # Track which functions are defined
         defined_functions = {func.name for func in mir_functions}
         
-        # Collect all function calls to find which functions need declarations
+        # Collect all function calls and POW usage for declarations
         called_functions = set()
         print_called = False
+        pow_used = False
         for func in mir_functions:
             for block in func.blocks:
                 for instr in block.instructions:
@@ -116,12 +117,14 @@ class LLVMGenerator:
                         called_functions.add(func_name)
                         if func_name == "print":
                             print_called = True
-        
-        # Declare printf if print is called
-        # Match clang's generated format exactly
+                    elif instr.op == Op.POW:
+                        pow_used = True
+
         if print_called:
-            # Use the exact format clang generates for printf
             self.emit("declare i32 @printf(i8* noundef, ...)")
+            self.emit("")  # Blank line
+        if pow_used:
+            self.emit("declare double @pow(double, double)")
             self.emit("")  # Blank line
         
         # Only declare functions that are called but not defined
@@ -693,7 +696,6 @@ class LLVMGenerator:
                     self.temp_types[result] = "int"
         
         elif op == Op.MOD:
-            # Modulo: %t = srem i32 %a, %b
             a = self.get_llvm_value(operands[0])
             b = self.get_llvm_value(operands[1])
             llvm_type = "i32"
@@ -701,8 +703,54 @@ class LLVMGenerator:
             self.emit(f"  {llvm_temp} = srem {llvm_type} {a}, {b}")
             if result:
                 self.temp_to_llvm[result] = llvm_temp
-                # Modulo always produces int
                 self.temp_types[result] = "int"
+
+        elif op == Op.POW:
+            a = self.get_llvm_value(operands[0])
+            b = self.get_llvm_value(operands[1])
+            a_type = self.temp_types.get(operands[0], "int")
+            b_type = self.temp_types.get(operands[1], "int")
+            if a_type == "char" and a.startswith('%'):
+                a_fp = self.new_llvm_temp()
+                self.emit(f"  {a_fp} = sitofp i8 {a} to double")
+                a = a_fp
+            elif a_type != "float" and a.startswith('%'):
+                a_fp = self.new_llvm_temp()
+                self.emit(f"  {a_fp} = sitofp i32 {a} to double")
+                a = a_fp
+            elif a_type != "float" and not a.startswith('%'):
+                try:
+                    a = str(float(a))
+                except (ValueError, TypeError):
+                    a_fp = self.new_llvm_temp()
+                    self.emit(f"  {a_fp} = sitofp i32 {a} to double")
+                    a = a_fp
+            if b_type == "char" and b.startswith('%'):
+                b_fp = self.new_llvm_temp()
+                self.emit(f"  {b_fp} = sitofp i8 {b} to double")
+                b = b_fp
+            elif b_type != "float" and b.startswith('%'):
+                b_fp = self.new_llvm_temp()
+                self.emit(f"  {b_fp} = sitofp i32 {b} to double")
+                b = b_fp
+            elif b_type != "float" and not b.startswith('%'):
+                try:
+                    b = str(float(b))
+                except (ValueError, TypeError):
+                    b_fp = self.new_llvm_temp()
+                    self.emit(f"  {b_fp} = sitofp i32 {b} to double")
+                    b = b_fp
+            pow_temp = self.new_llvm_temp()
+            self.emit(f"  {pow_temp} = call double @pow(double {a}, double {b})")
+            if result:
+                if a_type in ("int", "char") and b_type in ("int", "char"):
+                    llvm_temp = self.new_llvm_temp()
+                    self.emit(f"  {llvm_temp} = fptosi double {pow_temp} to i32")
+                    self.temp_to_llvm[result] = llvm_temp
+                    self.temp_types[result] = "int"
+                else:
+                    self.temp_to_llvm[result] = pow_temp
+                    self.temp_types[result] = "float"
         
         elif op == Op.SHL:
             # Left shift: %t = shl i32 %a, %b

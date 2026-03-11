@@ -84,8 +84,8 @@ class CodeGenerator:
                 llvm_file = f.name
                 self.temp_files.append(llvm_file)
             
-            # Build clang command with optimization flags
-            clang_cmd = ['clang', llvm_file, '-o', output_name, '-lc']
+            # Build clang command with optimization flags (-lm for pow, etc.)
+            clang_cmd = ['clang', llvm_file, '-o', output_name, '-lc', '-lm']
             
             # Add optimization flag
             opt_flag = self._get_clang_opt_flag()
@@ -144,8 +144,8 @@ class CodeGenerator:
             if result.returncode != 0:
                 return False
             
-            # Assemble and link with optimization flags
-            gcc_cmd = ['gcc', asm_file, '-o', output_name]
+            # Assemble and link with optimization flags (-lm for pow)
+            gcc_cmd = ['gcc', asm_file, '-o', output_name, '-lm']
             
             # Add optimization flag for gcc
             opt_flag = self._get_clang_opt_flag()  # GCC uses same flags as clang

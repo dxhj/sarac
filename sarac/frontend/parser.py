@@ -15,7 +15,8 @@ class Parser(object):
         ('left', 'BITWISE_AND'),
         ('left', 'PLUS', 'MINUS'),
         ('left', 'BITWISE_LS', 'BITWISE_RS'),
-        ('left', 'TIMES', 'DIV'),
+        ('left', 'TIMES', 'DIV', 'MOD'),
+        ('right', 'POW'),
     )
 
     def __init__(self, debug=False):
@@ -184,8 +185,10 @@ class Parser(object):
                       | expression MINUS expression
                       | expression BITWISE_LS expression
                       | expression BITWISE_RS expression
-                      | expression TIMES expression 
-                      | expression DIV expression"""
+                      | expression TIMES expression
+                      | expression DIV expression
+                      | expression MOD expression
+                      | expression POW expression"""
         if len(p) == 2:
             p[0] = p[1]
         else:

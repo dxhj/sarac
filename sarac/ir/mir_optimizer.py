@@ -243,7 +243,7 @@ class MIROptimizer:
                     continue
                 
                 # Try to fold operations with constant operands
-                if instr.op in (Op.ADD, Op.SUB, Op.MUL, Op.DIV, Op.MOD, Op.SHL, Op.SHR, Op.BAND, Op.BOR, Op.BXOR):
+                if instr.op in (Op.ADD, Op.SUB, Op.MUL, Op.DIV, Op.MOD, Op.POW, Op.SHL, Op.SHR, Op.BAND, Op.BOR, Op.BXOR):
                     if len(instr.operands) >= 2:
                         left = instr.operands[0]
                         right = instr.operands[1]
@@ -321,11 +321,25 @@ class MIROptimizer:
                                     else:
                                         new_instructions.append(instr)
                                         continue
+                                elif instr.op == Op.POW:
+                                    try:
+                                        if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)):
+                                            result = left_val ** right_val
+                                            if isinstance(left_val, int) and isinstance(right_val, int) and right_val >= 0:
+                                                result = int(result)
+                                        else:
+                                            new_instructions.append(instr)
+                                            continue
+                                    except (OverflowError, ValueError):
+                                        new_instructions.append(instr)
+                                        continue
 
                                 # Determine result type: if either operand is float, result is float
                                 # But shifts always produce int
                                 if instr.op in (Op.SHL, Op.SHR, Op.BAND, Op.BOR, Op.BXOR):
                                     result_type = "int"
+                                elif instr.op == Op.POW:
+                                    result_type = "float" if isinstance(result, float) else "int"
                                 else:
                                     left_type = constant_types.get(left, "int")
                                     right_type = constant_types.get(right, "int")

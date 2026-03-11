@@ -138,6 +138,7 @@ class Op:
     MUL = "mul"
     DIV = "div"
     MOD = "mod"
+    POW = "pow"
     NEG = "neg"
     
     # Bitwise
@@ -538,6 +539,7 @@ class MIRGenerator:
                 '*': Op.MUL,
                 '/': Op.DIV,
                 '%': Op.MOD,
+                '**': Op.POW,
                 '<<': Op.SHL,
                 '>>': Op.SHR,
                 '&': Op.BAND,

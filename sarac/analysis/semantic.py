@@ -106,6 +106,20 @@ class SemanticsVisitor(object):
                     type2_str = str(node.children[1].type) if node.children[1].type else "unknown"
                     Error.type_error("bitwise operator requires integral types (int or char), got %s and %s" % (type1_str, type2_str),
                                    node.coord.line, node.coord.column)
+            elif node.op == "%":
+                node.type = generalize_integral_type(node.children[0].type, node.children[1].type)
+                if node.type is None:
+                    type1_str = str(node.children[0].type) if node.children[0].type else "unknown"
+                    type2_str = str(node.children[1].type) if node.children[1].type else "unknown"
+                    Error.type_error("modulo (%%) requires integral types (int or char), got %s and %s" % (type1_str, type2_str),
+                                   node.coord.line, node.coord.column)
+            elif node.op == "**":
+                node.type = generalize_type(node.children[0].type, node.children[1].type)
+                if node.type is None:
+                    type1_str = str(node.children[0].type) if node.children[0].type else "unknown"
+                    type2_str = str(node.children[1].type) if node.children[1].type else "unknown"
+                    Error.type_error("exponentiation (**) requires numeric types, got %s and %s" % (type1_str, type2_str),
+                                   node.coord.line, node.coord.column)
             else:
                 node.type = generalize_type(node.children[0].type, node.children[1].type)
                 if node.type is None:

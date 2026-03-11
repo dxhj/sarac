@@ -42,6 +42,9 @@ class GASGenerator:
         
         # Declare external functions
         self.emit(".extern printf")
+        pow_used = any(instr.op == Op.POW for func in mir_functions for block in func.blocks for instr in block.instructions)
+        if pow_used:
+            self.emit(".extern pow")
         self.emit("")
         
         # First pass: collect all string literals
@@ -398,6 +401,17 @@ class GASGenerator:
                 result_reg = self.reg_allocator.allocate()
                 self.emit(f"  movq {operand_reg}, {result_reg}")
                 self.emit(f"  notq {result_reg}")
+                self.temp_to_reg[result] = result_reg
+
+        elif op == Op.POW:
+            if result:
+                left_reg = self.get_temp_reg(operands[0])
+                right_reg = self.get_temp_reg(operands[1])
+                result_reg = self.reg_allocator.allocate()
+                self.emit(f"  cvtsi2sdq {left_reg}, %xmm0")
+                self.emit(f"  cvtsi2sdq {right_reg}, %xmm1")
+                self.emit("  call pow")
+                self.emit(f"  cvtsd2siq %xmm0, {result_reg}")
                 self.temp_to_reg[result] = result_reg
         
         elif op == Op.EQ:

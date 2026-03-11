@@ -42,6 +42,8 @@ class Lexer(object):
         'MINUS',
         'TIMES',
         'DIV',
+        'MOD',
+        'POW',
         'NOT',
         'LPAREN',
         'RPAREN',
@@ -149,12 +151,20 @@ class Lexer(object):
         r"""\-"""
         return self._set_token_value(t)
 
+    def t_POW(self, t):
+        r"""\*\*"""
+        return self._set_token_value(t)
+
     def t_TIMES(self, t):
         r"""\*"""
         return self._set_token_value(t)
 
     def t_DIV(self, t):
         r"""\/"""
+        return self._set_token_value(t)
+
+    def t_MOD(self, t):
+        r"""%"""
         return self._set_token_value(t)
 
     def t_NOT(self, t):
