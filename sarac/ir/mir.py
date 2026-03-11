@@ -141,8 +141,12 @@ class Op:
     NEG = "neg"
     
     # Bitwise
-    SHL = "shl"  # Left shift (<<)
-    SHR = "shr"  # Right shift (>>)
+    SHL = "shl"   # Left shift (<<)
+    SHR = "shr"   # Right shift (>>)
+    BAND = "band"  # Bitwise AND (&)
+    BOR = "bor"    # Bitwise OR (|)
+    BXOR = "bxor"  # Bitwise XOR (^)
+    BNOT = "bnot"  # Bitwise NOT (~)
     
     # Comparisons
     EQ = "eq"
@@ -536,6 +540,9 @@ class MIRGenerator:
                 '%': Op.MOD,
                 '<<': Op.SHL,
                 '>>': Op.SHR,
+                '&': Op.BAND,
+                '|': Op.BOR,
+                '^': Op.BXOR,
                 '==': Op.EQ,
                 '!=': Op.NE,
                 '<': Op.LT,
@@ -561,6 +568,7 @@ class MIRGenerator:
             op_map = {
                 '-': Op.NEG,
                 '!': Op.NOT,
+                '~': Op.BNOT,
             }
             
             mir_op = op_map.get(node.op, node.op)

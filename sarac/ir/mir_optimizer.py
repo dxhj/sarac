@@ -243,7 +243,7 @@ class MIROptimizer:
                     continue
                 
                 # Try to fold operations with constant operands
-                if instr.op in (Op.ADD, Op.SUB, Op.MUL, Op.DIV, Op.MOD, Op.SHL, Op.SHR):
+                if instr.op in (Op.ADD, Op.SUB, Op.MUL, Op.DIV, Op.MOD, Op.SHL, Op.SHR, Op.BAND, Op.BOR, Op.BXOR):
                     if len(instr.operands) >= 2:
                         left = instr.operands[0]
                         right = instr.operands[1]
@@ -298,17 +298,33 @@ class MIROptimizer:
                                         new_instructions.append(instr)
                                         continue
                                 elif instr.op == Op.SHR:
-                                    # Right shift: only works with integers
                                     if isinstance(left_val, int) and isinstance(right_val, int):
                                         result = left_val >> right_val
                                     else:
-                                        # Can't shift floats
                                         new_instructions.append(instr)
                                         continue
-                                
+                                elif instr.op == Op.BAND:
+                                    if isinstance(left_val, int) and isinstance(right_val, int):
+                                        result = left_val & right_val
+                                    else:
+                                        new_instructions.append(instr)
+                                        continue
+                                elif instr.op == Op.BOR:
+                                    if isinstance(left_val, int) and isinstance(right_val, int):
+                                        result = left_val | right_val
+                                    else:
+                                        new_instructions.append(instr)
+                                        continue
+                                elif instr.op == Op.BXOR:
+                                    if isinstance(left_val, int) and isinstance(right_val, int):
+                                        result = left_val ^ right_val
+                                    else:
+                                        new_instructions.append(instr)
+                                        continue
+
                                 # Determine result type: if either operand is float, result is float
                                 # But shifts always produce int
-                                if instr.op in (Op.SHL, Op.SHR):
+                                if instr.op in (Op.SHL, Op.SHR, Op.BAND, Op.BOR, Op.BXOR):
                                     result_type = "int"
                                 else:
                                     left_type = constant_types.get(left, "int")
@@ -330,12 +346,11 @@ class MIROptimizer:
                                 pass
                 
                 # Handle unary operations
-                elif instr.op in (Op.NEG, Op.NOT):
+                elif instr.op in (Op.NEG, Op.NOT, Op.BNOT):
                     if len(instr.operands) >= 1:
                         operand = instr.operands[0]
                         operand_val = constants.get(operand) if isinstance(operand, str) else (operand if isinstance(operand, (int, float)) else None)
                         
-                        # Convert string numbers to actual numbers
                         if isinstance(operand_val, str):
                             try:
                                 operand_val = int(operand_val) if operand_val.isdigit() or (operand_val.startswith('-') and operand_val[1:].isdigit()) else float(operand_val)
@@ -348,11 +363,16 @@ class MIROptimizer:
                                     result = -operand_val
                                 elif instr.op == Op.NOT:
                                     result = 0 if operand_val else 1
+                                elif instr.op == Op.BNOT:
+                                    if isinstance(operand_val, int):
+                                        result = ~operand_val
+                                    else:
+                                        new_instructions.append(instr)
+                                        continue
                                 
-                                # Determine result type from operand type
                                 operand_type = constant_types.get(operand, "int")
-                                result_type = operand_type  # Unary ops preserve type (except NOT which is always int)
-                                if instr.op == Op.NOT:
+                                result_type = operand_type
+                                if instr.op in (Op.NOT, Op.BNOT):
                                     result_type = "int"
                                 
                                 const_instr = Instruction(Op.CONST, result)

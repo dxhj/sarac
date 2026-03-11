@@ -59,6 +59,20 @@ def is_numeric_type(ttype):
     return False
 
 
+def is_integral_type(ttype):
+    """Check if a type is integral (int or char). Used for bitwise operations."""
+    return ttype == integerTypeDescriptor or ttype == charTypeDescriptor
+
+
+def generalize_integral_type(type1, type2):
+    """Generalize two integral types for bitwise operations. Returns None if either is not integral."""
+    if not is_integral_type(type1) or not is_integral_type(type2):
+        return None
+    if type1 == integerTypeDescriptor or type2 == integerTypeDescriptor:
+        return integerTypeDescriptor
+    return charTypeDescriptor
+
+
 def generalize_type(type1, type2):
     """Generalize two types for binary operations. Only works for numeric types.
     Returns None if either type is not numeric (e.g., string types).

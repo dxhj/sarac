@@ -344,21 +344,60 @@ class GASGenerator:
                 self.temp_to_reg[result] = result_reg
         
         elif op == Op.SHR:
-            # Right shift (arithmetic): sarq %cl, %reg (or sarq $imm, %reg)
             if result:
                 left_reg = self.get_temp_reg(operands[0])
                 right_reg = self.get_temp_reg(operands[1])
                 result_reg = self.reg_allocator.allocate()
                 self.emit(f"  movq {left_reg}, {result_reg}")
-                # Check if right operand is a constant
                 if isinstance(operands[1], str) and operands[1].isdigit():
-                    # Immediate shift
                     self.emit(f"  sarq ${operands[1]}, {result_reg}")
                 else:
-                    # Shift by register (must be %cl for x86-64)
-                    # Move right operand to %cl
                     self.emit(f"  movq {right_reg}, %rcx")
                     self.emit(f"  sarq %cl, {result_reg}")
+                self.temp_to_reg[result] = result_reg
+
+        elif op == Op.BAND:
+            if result:
+                left_reg = self.get_temp_reg(operands[0])
+                right_reg = self.get_temp_reg(operands[1])
+                result_reg = self.reg_allocator.allocate()
+                self.emit(f"  movq {left_reg}, {result_reg}")
+                if isinstance(operands[1], str) and (operands[1].isdigit() or (operands[1].startswith('-') and operands[1][1:].isdigit())):
+                    self.emit(f"  andq ${operands[1]}, {result_reg}")
+                else:
+                    self.emit(f"  andq {right_reg}, {result_reg}")
+                self.temp_to_reg[result] = result_reg
+
+        elif op == Op.BOR:
+            if result:
+                left_reg = self.get_temp_reg(operands[0])
+                right_reg = self.get_temp_reg(operands[1])
+                result_reg = self.reg_allocator.allocate()
+                self.emit(f"  movq {left_reg}, {result_reg}")
+                if isinstance(operands[1], str) and (operands[1].isdigit() or (operands[1].startswith('-') and operands[1][1:].isdigit())):
+                    self.emit(f"  orq ${operands[1]}, {result_reg}")
+                else:
+                    self.emit(f"  orq {right_reg}, {result_reg}")
+                self.temp_to_reg[result] = result_reg
+
+        elif op == Op.BXOR:
+            if result:
+                left_reg = self.get_temp_reg(operands[0])
+                right_reg = self.get_temp_reg(operands[1])
+                result_reg = self.reg_allocator.allocate()
+                self.emit(f"  movq {left_reg}, {result_reg}")
+                if isinstance(operands[1], str) and (operands[1].isdigit() or (operands[1].startswith('-') and operands[1][1:].isdigit())):
+                    self.emit(f"  xorq ${operands[1]}, {result_reg}")
+                else:
+                    self.emit(f"  xorq {right_reg}, {result_reg}")
+                self.temp_to_reg[result] = result_reg
+
+        elif op == Op.BNOT:
+            if result:
+                operand_reg = self.get_temp_reg(operands[0])
+                result_reg = self.reg_allocator.allocate()
+                self.emit(f"  movq {operand_reg}, {result_reg}")
+                self.emit(f"  notq {result_reg}")
                 self.temp_to_reg[result] = result_reg
         
         elif op == Op.EQ:

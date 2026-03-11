@@ -1,6 +1,6 @@
 from sarac.frontend.ast import Reference, BinaryOperator, UnaryOperator, Assignment, FunctionDefinition, Return, FunctionCall, Constant, Declaration
 from sarac.analysis.attributes import VariableAttributes
-from sarac.analysis.types import generalize_type, voidTypeDescriptor
+from sarac.analysis.types import generalize_type, generalize_integral_type, is_integral_type, voidTypeDescriptor, integerTypeDescriptor
 from sarac.utils.error import Error
 
 
@@ -75,36 +75,44 @@ class SemanticsVisitor(object):
 
         if isinstance(node, UnaryOperator):
             node.accept_children(self)
-            # Unary operators preserve the type of their operand
-            if len(node.children) > 0 and node.children[0] is not None:
-                node.type = node.children[0].type
-            else:
-                Error.type_error("unary operator has no operand", 
-                               node.coord.line if node.coord else 0, 
+            if len(node.children) == 0 or node.children[0] is None:
+                Error.type_error("unary operator has no operand",
+                               node.coord.line if node.coord else 0,
                                node.coord.column if node.coord else 0)
+                return
+            if node.op == "~":
+                if not is_integral_type(node.children[0].type):
+                    Error.type_error("bitwise NOT (~) requires integral type (int or char)",
+                                   node.coord.line if node.coord else 0, node.coord.column if node.coord else 0)
+                    return
+                node.type = integerTypeDescriptor
+            else:
+                node.type = node.children[0].type
             return
 
         if isinstance(node, BinaryOperator):
-            # Visit children first to ensure their types are set
             node.accept_children(self)
-            
-            # Ensure both operands have types
             if not hasattr(node.children[0], 'type') or node.children[0].type is None:
                 Error.type_error("left operand has no type", node.coord.line, node.coord.column)
                 return
             if not hasattr(node.children[1], 'type') or node.children[1].type is None:
                 Error.type_error("right operand has no type", node.coord.line, node.coord.column)
                 return
-            
-            # Generalize the types (returns None for incompatible types like int + string)
-            node.type = generalize_type(node.children[0].type, node.children[1].type)
 
-            if node.type is None:
-                type1_str = str(node.children[0].type) if node.children[0].type else "unknown"
-                type2_str = str(node.children[1].type) if node.children[1].type else "unknown"
-                Error.type_error("invalid types for binary operation: %s and %s" % (type1_str, type2_str), 
-                               node.coord.line, node.coord.column)
-
+            if node.op in ("&", "|", "^"):
+                node.type = generalize_integral_type(node.children[0].type, node.children[1].type)
+                if node.type is None:
+                    type1_str = str(node.children[0].type) if node.children[0].type else "unknown"
+                    type2_str = str(node.children[1].type) if node.children[1].type else "unknown"
+                    Error.type_error("bitwise operator requires integral types (int or char), got %s and %s" % (type1_str, type2_str),
+                                   node.coord.line, node.coord.column)
+            else:
+                node.type = generalize_type(node.children[0].type, node.children[1].type)
+                if node.type is None:
+                    type1_str = str(node.children[0].type) if node.children[0].type else "unknown"
+                    type2_str = str(node.children[1].type) if node.children[1].type else "unknown"
+                    Error.type_error("invalid types for binary operation: %s and %s" % (type1_str, type2_str),
+                                   node.coord.line, node.coord.column)
             return
 
         if isinstance(node, FunctionCall):

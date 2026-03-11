@@ -10,6 +10,9 @@ class Parser(object):
     precedence = (
         ('left', 'EQUAL', 'NOT_EQUAL'),
         ('left', 'LT', 'LE', 'GT', 'GE'),
+        ('left', 'BITWISE_OR'),
+        ('left', 'BITWISE_XOR'),
+        ('left', 'BITWISE_AND'),
         ('left', 'PLUS', 'MINUS'),
         ('left', 'BITWISE_LS', 'BITWISE_RS'),
         ('left', 'TIMES', 'DIV'),
@@ -174,6 +177,9 @@ class Parser(object):
                       | expression LE expression
                       | expression GT expression
                       | expression GE expression
+                      | expression BITWISE_OR expression
+                      | expression BITWISE_XOR expression
+                      | expression BITWISE_AND expression
                       | expression PLUS expression
                       | expression MINUS expression
                       | expression BITWISE_LS expression
@@ -272,7 +278,8 @@ class Parser(object):
     def p_unary_operator(self, p):
         """unary_operator : NOT
                           | MINUS
-                          | PLUS"""
+                          | PLUS
+                          | BITWISE_NOT"""
         p[0] = p[1][0]
 
     def p_type_specifier(self, p):

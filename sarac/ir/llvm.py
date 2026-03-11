@@ -717,12 +717,81 @@ class LLVMGenerator:
         
         elif op == Op.SHR:
             # Right shift (arithmetic): %t = ashr i32 %a, %b
-            # Using arithmetic shift for signed integers
             a = self.get_llvm_value(operands[0])
             b = self.get_llvm_value(operands[1])
             llvm_type = "i32"
             llvm_temp = self.new_llvm_temp()
             self.emit(f"  {llvm_temp} = ashr {llvm_type} {a}, {b}")
+            if result:
+                self.temp_to_llvm[result] = llvm_temp
+                self.temp_types[result] = "int"
+
+        elif op == Op.BAND:
+            a = self.get_llvm_value(operands[0])
+            b = self.get_llvm_value(operands[1])
+            a_type = self.temp_types.get(operands[0], "int")
+            b_type = self.temp_types.get(operands[1], "int")
+            if a_type == "char" and a.startswith('%'):
+                a_ext = self.new_llvm_temp()
+                self.emit(f"  {a_ext} = zext i8 {a} to i32")
+                a = a_ext
+            if b_type == "char" and b.startswith('%'):
+                b_ext = self.new_llvm_temp()
+                self.emit(f"  {b_ext} = zext i8 {b} to i32")
+                b = b_ext
+            llvm_temp = self.new_llvm_temp()
+            self.emit(f"  {llvm_temp} = and i32 {a}, {b}")
+            if result:
+                self.temp_to_llvm[result] = llvm_temp
+                self.temp_types[result] = "int"
+
+        elif op == Op.BOR:
+            a = self.get_llvm_value(operands[0])
+            b = self.get_llvm_value(operands[1])
+            a_type = self.temp_types.get(operands[0], "int")
+            b_type = self.temp_types.get(operands[1], "int")
+            if a_type == "char" and a.startswith('%'):
+                a_ext = self.new_llvm_temp()
+                self.emit(f"  {a_ext} = zext i8 {a} to i32")
+                a = a_ext
+            if b_type == "char" and b.startswith('%'):
+                b_ext = self.new_llvm_temp()
+                self.emit(f"  {b_ext} = zext i8 {b} to i32")
+                b = b_ext
+            llvm_temp = self.new_llvm_temp()
+            self.emit(f"  {llvm_temp} = or i32 {a}, {b}")
+            if result:
+                self.temp_to_llvm[result] = llvm_temp
+                self.temp_types[result] = "int"
+
+        elif op == Op.BXOR:
+            a = self.get_llvm_value(operands[0])
+            b = self.get_llvm_value(operands[1])
+            a_type = self.temp_types.get(operands[0], "int")
+            b_type = self.temp_types.get(operands[1], "int")
+            if a_type == "char" and a.startswith('%'):
+                a_ext = self.new_llvm_temp()
+                self.emit(f"  {a_ext} = zext i8 {a} to i32")
+                a = a_ext
+            if b_type == "char" and b.startswith('%'):
+                b_ext = self.new_llvm_temp()
+                self.emit(f"  {b_ext} = zext i8 {b} to i32")
+                b = b_ext
+            llvm_temp = self.new_llvm_temp()
+            self.emit(f"  {llvm_temp} = xor i32 {a}, {b}")
+            if result:
+                self.temp_to_llvm[result] = llvm_temp
+                self.temp_types[result] = "int"
+
+        elif op == Op.BNOT:
+            a = self.get_llvm_value(operands[0])
+            a_type = self.temp_types.get(operands[0], "int")
+            if a_type == "char" and a.startswith('%'):
+                a_ext = self.new_llvm_temp()
+                self.emit(f"  {a_ext} = zext i8 {a} to i32")
+                a = a_ext
+            llvm_temp = self.new_llvm_temp()
+            self.emit(f"  {llvm_temp} = xor i32 {a}, -1")
             if result:
                 self.temp_to_llvm[result] = llvm_temp
                 self.temp_types[result] = "int"
