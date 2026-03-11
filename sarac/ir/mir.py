@@ -545,6 +545,8 @@ class MIRGenerator:
                 '&': Op.BAND,
                 '|': Op.BOR,
                 '^': Op.BXOR,
+                '&&': Op.AND,
+                '||': Op.OR,
                 '==': Op.EQ,
                 '!=': Op.NE,
                 '<': Op.LT,

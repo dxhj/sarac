@@ -927,30 +927,36 @@ class LLVMGenerator:
                 self.i1_temporaries.add(llvm_temp)  # Comparison results are i1
         
         elif op == Op.AND:
-            # Logical AND: %t = and i1 %a, %b
-            a = self.get_llvm_value(operands[0])
-            b = self.get_llvm_value(operands[1])
-            llvm_temp = self.new_llvm_temp()
-            self.emit(f"  {llvm_temp} = and i1 {a}, {b}")
+            a = self._to_i1(operands[0])
+            b = self._to_i1(operands[1])
+            i1_temp = self.new_llvm_temp()
+            self.emit(f"  {i1_temp} = and i1 {a}, {b}")
             if result:
+                llvm_temp = self.new_llvm_temp()
+                self.emit(f"  {llvm_temp} = zext i1 {i1_temp} to i32")
                 self.temp_to_llvm[result] = llvm_temp
-        
+                self.temp_types[result] = "int"
+
         elif op == Op.OR:
-            # Logical OR: %t = or i1 %a, %b
-            a = self.get_llvm_value(operands[0])
-            b = self.get_llvm_value(operands[1])
-            llvm_temp = self.new_llvm_temp()
-            self.emit(f"  {llvm_temp} = or i1 {a}, {b}")
+            a = self._to_i1(operands[0])
+            b = self._to_i1(operands[1])
+            i1_temp = self.new_llvm_temp()
+            self.emit(f"  {i1_temp} = or i1 {a}, {b}")
             if result:
+                llvm_temp = self.new_llvm_temp()
+                self.emit(f"  {llvm_temp} = zext i1 {i1_temp} to i32")
                 self.temp_to_llvm[result] = llvm_temp
-        
+                self.temp_types[result] = "int"
+
         elif op == Op.NOT:
-            # Logical NOT: %t = xor i1 %a, 1
-            a = self.get_llvm_value(operands[0])
-            llvm_temp = self.new_llvm_temp()
-            self.emit(f"  {llvm_temp} = xor i1 {a}, 1")
+            a = self._to_i1(operands[0])
+            i1_temp = self.new_llvm_temp()
+            self.emit(f"  {i1_temp} = xor i1 {a}, 1")
             if result:
+                llvm_temp = self.new_llvm_temp()
+                self.emit(f"  {llvm_temp} = zext i1 {i1_temp} to i32")
                 self.temp_to_llvm[result] = llvm_temp
+                self.temp_types[result] = "int"
         
         elif op == Op.NEG:
             # Negate: %t = sub i32 0, %a
@@ -1402,4 +1408,14 @@ class LLVMGenerator:
         
         # Otherwise, treat as constant (might be a variable name or other)
         return str(operand)
+
+    def _to_i1(self, operand):
+        """Convert operand to i1 for logical operations. Returns LLVM value (i1)."""
+        val = self.get_llvm_value(operand)
+        if val.startswith('%') and val in self.i1_temporaries:
+            return val
+        cond_temp = self.new_llvm_temp()
+        self.emit(f"  {cond_temp} = icmp ne i32 {val}, 0")
+        self.i1_temporaries.add(cond_temp)
+        return cond_temp
 

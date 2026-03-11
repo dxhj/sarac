@@ -243,7 +243,7 @@ class MIROptimizer:
                     continue
                 
                 # Try to fold operations with constant operands
-                if instr.op in (Op.ADD, Op.SUB, Op.MUL, Op.DIV, Op.MOD, Op.POW, Op.SHL, Op.SHR, Op.BAND, Op.BOR, Op.BXOR):
+                if instr.op in (Op.ADD, Op.SUB, Op.MUL, Op.DIV, Op.MOD, Op.POW, Op.SHL, Op.SHR, Op.BAND, Op.BOR, Op.BXOR, Op.AND, Op.OR):
                     if len(instr.operands) >= 2:
                         left = instr.operands[0]
                         right = instr.operands[1]
@@ -333,10 +333,22 @@ class MIROptimizer:
                                     except (OverflowError, ValueError):
                                         new_instructions.append(instr)
                                         continue
+                                elif instr.op == Op.AND:
+                                    if left_val is not None and right_val is not None:
+                                        result = 1 if (left_val and right_val) else 0
+                                    else:
+                                        new_instructions.append(instr)
+                                        continue
+                                elif instr.op == Op.OR:
+                                    if left_val is not None and right_val is not None:
+                                        result = 1 if (left_val or right_val) else 0
+                                    else:
+                                        new_instructions.append(instr)
+                                        continue
 
                                 # Determine result type: if either operand is float, result is float
                                 # But shifts always produce int
-                                if instr.op in (Op.SHL, Op.SHR, Op.BAND, Op.BOR, Op.BXOR):
+                                if instr.op in (Op.SHL, Op.SHR, Op.BAND, Op.BOR, Op.BXOR, Op.AND, Op.OR):
                                     result_type = "int"
                                 elif instr.op == Op.POW:
                                     result_type = "float" if isinstance(result, float) else "int"

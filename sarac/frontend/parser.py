@@ -8,6 +8,8 @@ from sarac.utils.error import Error
 
 class Parser(object):
     precedence = (
+        ('left', 'LOGICAL_OR'),
+        ('left', 'LOGICAL_AND'),
         ('left', 'EQUAL', 'NOT_EQUAL'),
         ('left', 'LT', 'LE', 'GT', 'GE'),
         ('left', 'BITWISE_OR'),
@@ -172,6 +174,8 @@ class Parser(object):
 
     def p_binary_expression(self, p):
         """expression : unary_expression
+                      | expression LOGICAL_OR expression
+                      | expression LOGICAL_AND expression
                       | expression EQUAL expression
                       | expression NOT_EQUAL expression
                       | expression LT expression

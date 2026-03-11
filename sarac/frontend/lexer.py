@@ -34,6 +34,8 @@ class Lexer(object):
         'GE',
         'BITWISE_LS',
         'BITWISE_RS',
+        'LOGICAL_AND',
+        'LOGICAL_OR',
         'BITWISE_AND',
         'BITWISE_OR',
         'BITWISE_XOR',
@@ -194,6 +196,14 @@ class Lexer(object):
 
     def t_BITWISE_RS(self, t):
         r""">>"""
+        return self._set_token_value(t)
+
+    def t_LOGICAL_AND(self, t):
+        r"""&&"""
+        return self._set_token_value(t)
+
+    def t_LOGICAL_OR(self, t):
+        r"""\|\|"""
         return self._set_token_value(t)
 
     def t_BITWISE_AND(self, t):
