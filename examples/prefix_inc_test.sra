@@ -12,6 +12,8 @@ main(): int {
     a = ++x;
     b = x++;
     print(a, b, x);
+    print(--x);
+    print(--x);
     for_loop(0);
     return 0;
 }
