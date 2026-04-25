@@ -1,4 +1,18 @@
-from sarac.frontend.ast import Reference, BinaryOperator, UnaryOperator, Assignment, FunctionDefinition, Return, FunctionCall, Constant, Declaration
+from sarac.frontend.ast import (
+    Reference,
+    BinaryOperator,
+    UnaryOperator,
+    Assignment,
+    FunctionDefinition,
+    Return,
+    FunctionCall,
+    Constant,
+    Declaration,
+    PostfixIncrement,
+    PostfixDecrement,
+    PrefixIncrement,
+    PrefixDecrement,
+)
 from sarac.analysis.attributes import VariableAttributes
 from sarac.analysis.types import generalize_type, generalize_integral_type, is_integral_type, is_numeric_type, voidTypeDescriptor, integerTypeDescriptor
 from sarac.utils.error import Error
@@ -180,6 +194,33 @@ class SemanticsVisitor(object):
             if node.children[0].type is not node.children[1].type:
                 Error.type_error("trying to assign different types", node.coord.line, node.coord.column)
 
+            return
+
+        if isinstance(node, (PostfixIncrement, PostfixDecrement, PrefixIncrement, PrefixDecrement)):
+            node.accept_children(self)
+            opnd = node.children[0]
+            if not isinstance(opnd, Reference):
+                Error.type_error(
+                    "increment/decrement operand must be a variable",
+                    node.coord.line if node.coord else 0,
+                    node.coord.column if node.coord else 0,
+                )
+                return
+            if opnd.attributes is None or not isinstance(opnd.attributes, VariableAttributes):
+                Error.type_error(
+                    "\"%s\" is not a modifiable variable" % getattr(opnd, "name", "?"),
+                    node.coord.line if node.coord else 0,
+                    node.coord.column if node.coord else 0,
+                )
+                return
+            if not is_numeric_type(opnd.type):
+                Error.type_error(
+                    "increment/decrement requires a numeric type",
+                    node.coord.line if node.coord else 0,
+                    node.coord.column if node.coord else 0,
+                )
+                return
+            node.type = opnd.type
             return
 
         node.accept_children(self)

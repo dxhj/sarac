@@ -222,3 +222,17 @@ class PostfixDecrement(Expression):
         super(PostfixDecrement, self).__init__()
         self.children = [operand]
         self.operand = operand
+
+
+class PrefixIncrement(Expression):
+    def __init__(self, operand):
+        super(PrefixIncrement, self).__init__()
+        self.children = [operand]
+        self.operand = operand
+
+
+class PrefixDecrement(Expression):
+    def __init__(self, operand):
+        super(PrefixDecrement, self).__init__()
+        self.children = [operand]
+        self.operand = operand

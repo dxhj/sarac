@@ -19,6 +19,7 @@ class Parser(object):
         ('left', 'BITWISE_LS', 'BITWISE_RS'),
         ('left', 'TIMES', 'DIV', 'MOD'),
         ('right', 'POW'),
+        ('right', 'INCREMENT', 'DECREMENT'),
     )
 
     def __init__(self, debug=False):
@@ -202,9 +203,17 @@ class Parser(object):
 
     def p_unary_expression(self, p):
         """unary_expression : postfix_expression
+                            | INCREMENT unary_expression
+                            | DECREMENT unary_expression
                             | unary_operator unary_expression"""
         if len(p) == 2:
             p[0] = p[1]
+        elif len(p) == 3 and p[1][0] == '++':
+            p[0] = PrefixIncrement(p[2])
+            p[0].coord = Coord(p[1][1], p[1][2])
+        elif len(p) == 3 and p[1][0] == '--':
+            p[0] = PrefixDecrement(p[2])
+            p[0].coord = Coord(p[1][1], p[1][2])
         else:
             p[0] = UnaryOperator(p[1], p[2])
 
